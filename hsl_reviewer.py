@@ -13,7 +13,6 @@ from sgfmetadata import SGFMetadata
 from query_analysis_engine_example import KataGo
 
 from sgfmill import sgf, sgf_moves
-from sgfmill.boards import Board as MillBoard
 
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -439,7 +438,7 @@ class GoClient(wx.Frame):
 
         self.init_ui()
         
-        self.undo(len(self.game_state.moves))
+        # self.undo(len(self.game_state.moves))
 
         self.get_kata_score_lead()
 
@@ -519,17 +518,26 @@ class GoClient(wx.Frame):
         atexit.register(self.kata_server.close)
     
     def get_kata_score_lead(self):
+        moves = []
+        for pla, loc in self.game_state.moves:
+            color = "b"
+            if (pla == 2):
+                color = "w"
+            
+            move = "ABCDEFGHJKLMNOPQRSTUVWXYZ"[self.game_state.board.loc_x(loc)] + str(19 - self.game_state.board.loc_y(loc))
+            moves.append((color, move))
+
         query = {
             "id": str(self.kata_server.query_counter),
-            "moves": [("b", "D4")],
+            "moves": moves,
             "rules": "Japanese",
             "komi": 6.5,
             "boardXSize": 19,
             "boardYSize": 19,
             "maxVisits": 2500,
             "allowMoves": [{
-                "player": "w",
-                "moves": ["D5"],
+                "player": "b",
+                "moves": ["P4"],
                 "untilDepth": 1
             }]
         }
@@ -537,7 +545,8 @@ class GoClient(wx.Frame):
 
         result = self.kata_server.query_raw(query)
 
-        print(result["moveInfos"][0]["scoreLead"])
+        # print(result["moveInfos"][0]["scoreLead"])
+        print(result["moveInfos"])
 
     def send_command(self, server_process, command):
         print(f"Sending: {json.dumps(command)}")
