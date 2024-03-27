@@ -234,8 +234,8 @@ class GoBoard(wx.Panel):
 
                 command = {"command": "play", "pla": pla, "loc": loc}
                 parent = self.GetParent().GetParent()
-                parent.send_command(command)
-                response = parent.receive_response()
+                parent.send_command(parent.hsl_server_process, command)
+                response = parent.receive_response(parent.hsl_server_process)
                 if response != {"outputs": ""}:
                     parent.handle_error(f"Unexpected response from server: {response}")
 
@@ -249,8 +249,8 @@ class GoBoard(wx.Panel):
         sgfmeta = self.sgfmeta
         command = {"command": "get_model_outputs", "sgfmeta": sgfmeta.to_dict()}
         parent = self.GetParent().GetParent()
-        parent.send_command(command)
-        response = parent.receive_response()
+        parent.send_command(parent.hsl_server_process, command)
+        response = parent.receive_response(parent.hsl_server_process)
         if "outputs" not in response:
             parent.handle_error(f"Unexpected response from server: {response}")
         self.latest_model_response = response["outputs"]
@@ -358,7 +358,7 @@ class SliderWindow(wx.Frame):
         self.Bind(wx.EVT_CLOSE, self.on_close)
 
     def on_close(self, event):
-        self.GetParent().server_process.terminate()
+        self.GetParent().hsl_server_process.terminate()
         self.GetParent().Close()
 
     def update_metadata(self):
@@ -421,15 +421,15 @@ class FileDropTarget(wx.FileDropTarget):
         return self.window.on_drop_files(sgf_files)
 
 class GoClient(wx.Frame):
-    def __init__(self, server_command, game_state):
+    def __init__(self, hsl_server_command, game_state):
         super().__init__(parent=None, title="HumanSLNetViz")
-        self.server_command = server_command
+        self.hsl_server_command = hsl_server_command
         self.game_state = game_state
         self.board_size = self.game_state.board_size
 
         self.SetDropTarget(FileDropTarget(self))
 
-        self.start_server()
+        self.start_hsl_server()
         self.init_ui()
         
         self.undo(len(self.game_state.moves))
@@ -462,22 +462,22 @@ class GoClient(wx.Frame):
         self.slider_window.SetPosition((pos_x, pos_y))
 
 
-    def start_server(self):
-        print(f"Starting server with command: {self.server_command}")
-        self.server_process = subprocess.Popen(
-            self.server_command,
+    def start_hsl_server(self):
+        print(f"Starting hsl server with command: {self.hsl_server_command}")
+        self.hsl_server_process = subprocess.Popen(
+            self.hsl_server_command,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True,
         )
-        atexit.register(self.server_process.terminate)
+        atexit.register(self.hsl_server_process.terminate)
 
         def print_stderr():
             while True:
-                line = self.server_process.stderr.readline()
+                line = self.hsl_server_process.stderr.readline()
                 if not line:
-                    returncode = self.server_process.poll()
+                    returncode = self.hsl_server_process.poll()
                     if returncode is not None:
                         return
                 print(line,end="")
@@ -486,34 +486,34 @@ class GoClient(wx.Frame):
         t.daemon = True
         t.start()
 
-        self.init_server()
+        self.init_hsl_server()
 
-    def init_server(self):
+    def init_hsl_server(self):
         command = {"command": "start", "board_size": self.board_size, "rules": GameState.RULES_JAPANESE}
-        self.send_command(command)
-        response = self.receive_response()
+        self.send_command(self.hsl_server_process, command)
+        response = self.receive_response(self.hsl_server_process)
         if response != {"outputs": ""}:
             self.handle_error(f"Unexpected response from server: {response}")
 
         for (pla,loc) in self.game_state.moves:
             command = {"command": "play", "pla": pla, "loc": loc}
-            self.send_command(command)
-            response = self.receive_response()
+            self.send_command(self.hsl_server_process, command)
+            response = self.receive_response(self.hsl_server_process)
             if response != {"outputs": ""}:
                 self.handle_error(f"Unexpected response from server: {response}")
 
-    def send_command(self, command):
+    def send_command(self, server_process, command):
         print(f"Sending: {json.dumps(command)}")
-        self.server_process.stdin.write(json.dumps(command) + "\n")
-        self.server_process.stdin.flush()
+        server_process.stdin.write(json.dumps(command) + "\n")
+        server_process.stdin.flush()
 
-    def receive_response(self):
+    def receive_response(self, server_process):
         print(f"Waiting for response")
         while True:
-            returncode = self.server_process.poll()
+            returncode = server_process.poll()
             if returncode is not None:
                 raise OSError(f"Server terminated unexpectedly with {returncode=}")
-            response = self.server_process.stdout.readline().strip()
+            response = server_process.stdout.readline().strip()
             if response != "":
                 break
         print(f"Got response (first 100 chars): {str(response[:100])}")
@@ -521,7 +521,7 @@ class GoClient(wx.Frame):
 
     def handle_error(self, error_message):
         print(f"Error: {error_message}")
-        self.server_process.terminate()
+        self.hsl_server_process.terminate()
 
         sys.exit(1)
 
@@ -552,8 +552,8 @@ class GoClient(wx.Frame):
             self.game_state.undo()
 
             command = {"command": "undo"}
-            self.send_command(command)
-            response = self.receive_response()
+            self.send_command(self.hsl_server_process, command)
+            response = self.receive_response(self.hsl_server_process)
             if response != {"outputs": ""}:
                 self.handle_error(f"Unexpected response from server: {response}")
 
@@ -572,8 +572,8 @@ class GoClient(wx.Frame):
             self.game_state.redo()
 
             command = {"command": "redo"}
-            self.send_command(command)
-            response = self.receive_response()
+            self.send_command(self.hsl_server_process, command)
+            response = self.receive_response(self.hsl_server_process)
             if response != {"outputs": ""}:
                 self.handle_error(f"Unexpected response from server: {response}")
 
@@ -606,22 +606,15 @@ class GoClient(wx.Frame):
         return True
 
     def on_close(self, event):
-        self.server_process.terminate()
+        self.hsl_server_process.terminate()
         event.Skip()
 
 def main():
     repo_path = "D:/Coding/Repos/HSL-Reviewer"
     sgf_file = f"{repo_path}/test.sgf"
-    server_command = f"python {repo_path}/humanslnet_server.py -checkpoint D:/Other/Mega/MEGAsync/Go/KataGo-Assets/Models/b18c384nbt-humanv0-test.ckpt -device cuda:0"
-    # server_command = sys.argv[1:]
 
-    if len(server_command) >= 2 and server_command[0] == "-sgf":
-        sgf_file = server_command[1]
-        server_command = server_command[2:]
-
-    if not server_command:
-        print("Usage: python humanslnet_gui.py [-sgf FILENAME] <server_command>")
-        sys.exit(1)
+    hsl_server_command = f"python {repo_path}/humanslnet_server.py -checkpoint D:/Other/Mega/MEGAsync/Go/KataGo-Assets/Models/b18c384nbt-humanv0-test.ckpt -device cuda:0"
+    server_command = f"python {repo_path}/humanslnet_server.py -checkpoint D:/Other/Mega/MEGAsync/Go/KataGo-Assets/Models/kata1-b18c384nbt-s9131461376-d4087399203.ckpt -device cuda:0"
 
     if sgf_file is not None:
         game_state = load_sgf_game_state(sgf_file)
@@ -629,7 +622,7 @@ def main():
         game_state = GameState(19, GameState.RULES_JAPANESE)
 
     app = wx.App()
-    client = GoClient(server_command, game_state)
+    client = GoClient(hsl_server_command, game_state)
     client.Bind(wx.EVT_CLOSE, client.on_close)
     client.Show()
     client.slider_window.Show()
