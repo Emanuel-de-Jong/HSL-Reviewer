@@ -421,15 +421,21 @@ class FileDropTarget(wx.FileDropTarget):
         return self.window.on_drop_files(sgf_files)
 
 class GoClient(wx.Frame):
-    def __init__(self, hsl_server_command, game_state):
+    def __init__(self, hsl_server_command, kata_server_command, game_state):
         super().__init__(parent=None, title="HumanSLNetViz")
         self.hsl_server_command = hsl_server_command
+        self.kata_server_command = kata_server_command
         self.game_state = game_state
         self.board_size = self.game_state.board_size
 
         self.SetDropTarget(FileDropTarget(self))
 
-        self.start_hsl_server()
+        self.hsl_server_process = self.start_server(hsl_server_command)
+        self.kata_server_process = self.start_server(kata_server_command)
+
+        self.init_server(self.hsl_server_process)
+        self.init_server(self.kata_server_process)
+
         self.init_ui()
         
         self.undo(len(self.game_state.moves))
@@ -462,22 +468,22 @@ class GoClient(wx.Frame):
         self.slider_window.SetPosition((pos_x, pos_y))
 
 
-    def start_hsl_server(self):
-        print(f"Starting hsl server with command: {self.hsl_server_command}")
-        self.hsl_server_process = subprocess.Popen(
-            self.hsl_server_command,
+    def start_server(self, server_command):
+        print(f"Starting hsl server with command: {server_command}")
+        server_process = subprocess.Popen(
+            server_command,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True,
         )
-        atexit.register(self.hsl_server_process.terminate)
+        atexit.register(server_process.terminate)
 
         def print_stderr():
             while True:
-                line = self.hsl_server_process.stderr.readline()
+                line = server_process.stderr.readline()
                 if not line:
-                    returncode = self.hsl_server_process.poll()
+                    returncode = server_process.poll()
                     if returncode is not None:
                         return
                 print(line,end="")
@@ -486,19 +492,19 @@ class GoClient(wx.Frame):
         t.daemon = True
         t.start()
 
-        self.init_hsl_server()
+        return server_process
 
-    def init_hsl_server(self):
+    def init_server(self, server_process):
         command = {"command": "start", "board_size": self.board_size, "rules": GameState.RULES_JAPANESE}
-        self.send_command(self.hsl_server_process, command)
-        response = self.receive_response(self.hsl_server_process)
+        self.send_command(server_process, command)
+        response = self.receive_response(server_process)
         if response != {"outputs": ""}:
             self.handle_error(f"Unexpected response from server: {response}")
 
         for (pla,loc) in self.game_state.moves:
             command = {"command": "play", "pla": pla, "loc": loc}
-            self.send_command(self.hsl_server_process, command)
-            response = self.receive_response(self.hsl_server_process)
+            self.send_command(server_process, command)
+            response = self.receive_response(server_process)
             if response != {"outputs": ""}:
                 self.handle_error(f"Unexpected response from server: {response}")
 
@@ -613,8 +619,8 @@ def main():
     repo_path = "D:/Coding/Repos/HSL-Reviewer"
     sgf_file = f"{repo_path}/test.sgf"
 
-    hsl_server_command = f"python {repo_path}/humanslnet_server.py -checkpoint D:/Other/Mega/MEGAsync/Go/KataGo-Assets/Models/b18c384nbt-humanv0-test.ckpt -device cuda:0"
-    server_command = f"python {repo_path}/humanslnet_server.py -checkpoint D:/Other/Mega/MEGAsync/Go/KataGo-Assets/Models/kata1-b18c384nbt-s9131461376-d4087399203.ckpt -device cuda:0"
+    hsl_server_command = f"python {repo_path}/gtp_server.py -checkpoint D:/Other/Mega/MEGAsync/Go/KataGo-Assets/Models/b18c384nbt-humanv0-test.ckpt -device cuda:0"
+    kata_server_command = f"python {repo_path}/gtp_server.py -checkpoint D:/Other/Mega/MEGAsync/Go/KataGo-Assets/Models/kata1-b18c384nbt-s9131461376-d4087399203.ckpt -device cuda:0"
 
     if sgf_file is not None:
         game_state = load_sgf_game_state(sgf_file)
@@ -622,7 +628,7 @@ def main():
         game_state = GameState(19, GameState.RULES_JAPANESE)
 
     app = wx.App()
-    client = GoClient(hsl_server_command, game_state)
+    client = GoClient(hsl_server_command, kata_server_command, game_state)
     client.Bind(wx.EVT_CLOSE, client.on_close)
     client.Show()
     client.slider_window.Show()
