@@ -27,6 +27,13 @@ player = "w"
 GRID_SIZE = 7
 GRID_RADIUS = math.floor(GRID_SIZE / 2)
 
+HSL_MIN_SCORE_DIFF = 1
+
+HSL_SOURCE = "OGS"
+HSL_RANK = "1K"
+HSL_DATE = 2022
+HSL_TIME_CONTROL = "Slow"
+
 HSL_ACTUAL_COMPARE_VISITS = 500
 KATA_BEST_VISITS = 2_500
 
@@ -308,7 +315,7 @@ class SliderWindow(wx.Frame):
 
         self.source_slider = LabeledSlider(panel, title="Source", options=["KG","OGS","KGS","Fox","Tygem(Unused)","GoGoD","Go4Go"],
             on_scroll_callback = (lambda idx, option: self.update_metadata()),
-            start_option="OGS",
+            start_option=HSL_SOURCE,
         )
         panel_sizer.Add(self.source_slider, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
@@ -316,20 +323,20 @@ class SliderWindow(wx.Frame):
             "KG","9d","8d","7d","6d","5d","4d","3d","2d","1d","1k","2k","3k","4k","5k","6k","7k","8k","9k","10k","11k","12k","13k","14k","15k","16k","17k","18k","19k","20k"
             ],
             on_scroll_callback = (lambda idx, option: self.update_metadata()),
-            start_option="1k",
+            start_option=HSL_RANK,
         )
         panel_sizer.Add(self.rank_slider, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
         self.date_slider = LabeledSlider(panel, title="Date", options=[
             1800,1825,1850,1875,1900,1915,1930,1940,1950,1960,1970,1980,1985,1990,1995,2000,2005,2008,2010,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023],
             on_scroll_callback = (lambda idx, option: self.update_metadata()),
-            start_option=2022,
+            start_option=HSL_DATE,
         )
         panel_sizer.Add(self.date_slider, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
         self.tc_slider = LabeledSlider(panel, title="TimeControl", options=["Blitz","Fast","Slow","Unknown"],
             on_scroll_callback = (lambda idx, option: self.update_metadata()),
-            start_option="Slow",
+            start_option=HSL_TIME_CONTROL,
         )
         panel_sizer.Add(self.tc_slider, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
@@ -491,7 +498,7 @@ class GoClient(wx.Frame):
 
             # print(f"HSL= {str(self.hsl_move)}: {hsl_score:.2f} | Actual= {str(self.actual_move)}: {actual_score:.2f}")
             
-            if (hsl_score + 1) > actual_score:
+            if (hsl_score + HSL_MIN_SCORE_DIFF) > actual_score:
                 continue
 
             allow_moves = []
