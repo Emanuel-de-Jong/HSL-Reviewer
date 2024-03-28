@@ -471,7 +471,15 @@ class GoClient(wx.Frame):
 
     def loc_kata_to_coord(self, kata):
         chars = [char for char in kata]
-        return Coord(ord(chars[0]) - 65, 19 - int(''.join(chars[1:])))
+
+        x = ord(chars[0])
+        # 'I' is skipped
+        if x <= 72:
+            x -= 65
+        else:
+            x -= 66
+            
+        return Coord(x, 19 - int(''.join(chars[1:])))
 
     def loc_coord_to_kata(self, coord):
         return "ABCDEFGHJKLMNOPQRSTUVWXYZ"[coord.x] + str(19 - coord.y)
