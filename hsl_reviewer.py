@@ -6,6 +6,7 @@ import os
 from threading import Thread
 import atexit
 import datetime
+import time
 
 from gamestate import GameState
 from board import Board
@@ -195,31 +196,31 @@ class GoBoard(wx.Panel):
             text_y = self.py_of_y(self.board_size+0.6) - text_height // 2
             gc.DrawText(label, text_x, text_y)
 
-            moves_and_probs0 = dict(self.latest_model_response["moves_and_probs0"])
-            # print(moves_and_probs0)
-            for y in range(self.board_size):
-                for x in range(self.board_size):
-                    loc = self.game_state.board.loc(x, y)
-                    max_prob = max(moves_and_probs0.values())
-                    if loc in moves_and_probs0:
-                        prob = moves_and_probs0[loc]
-                        r,g,b,a = policy_color(prob / max_prob ** 0.7)
-                        # print(r,g,b,a,prob)
-                        gc.SetBrush(wx.Brush(wx.Colour(r,g,b,alpha=round(a*0.9))))
-                        gc.SetPen(wx.Pen(wx.Colour(0,0,0,alpha=a),1))
-                        gc.SetFont(small_font,wx.Colour(0,0,0,alpha=a))
-                        gc.DrawRectangle(
-                            self.px_of_x(x-0.45),
-                            self.py_of_y(y-0.45),
-                            self.px_of_x(x+0.45)-self.px_of_x(x-0.45),
-                            self.py_of_y(y+0.45)-self.py_of_y(y-0.45),
-                        )
+            # moves_and_probs0 = dict(self.latest_model_response["moves_and_probs0"])
+            # # print(moves_and_probs0)
+            # for y in range(self.board_size):
+            #     for x in range(self.board_size):
+            #         loc = self.game_state.board.loc(x, y)
+            #         max_prob = max(moves_and_probs0.values())
+            #         if loc in moves_and_probs0:
+            #             prob = moves_and_probs0[loc]
+            #             r,g,b,a = policy_color(prob / max_prob ** 0.7)
+            #             # print(r,g,b,a,prob)
+            #             gc.SetBrush(wx.Brush(wx.Colour(r,g,b,alpha=round(a*0.9))))
+            #             gc.SetPen(wx.Pen(wx.Colour(0,0,0,alpha=a),1))
+            #             gc.SetFont(small_font,wx.Colour(0,0,0,alpha=a))
+            #             gc.DrawRectangle(
+            #                 self.px_of_x(x-0.45),
+            #                 self.py_of_y(y-0.45),
+            #                 self.px_of_x(x+0.45)-self.px_of_x(x-0.45),
+            #                 self.py_of_y(y+0.45)-self.py_of_y(y-0.45),
+            #             )
 
-                        label = "%.1f" % (prob*100.0)
-                        text_width, text_height = gc.GetTextExtent(label)
-                        text_x = self.px_of_x(x) - text_width // 2
-                        text_y = self.py_of_y(y) - text_height // 2
-                        gc.DrawText(label, text_x, text_y)
+            #             label = "%.1f" % (prob*100.0)
+            #             text_width, text_height = gc.GetTextExtent(label)
+            #             text_x = self.px_of_x(x) - text_width // 2
+            #             text_y = self.py_of_y(y) - text_height // 2
+            #             gc.DrawText(label, text_x, text_y)
 
 
     def on_click(self, event):
@@ -472,9 +473,8 @@ class GoClient(wx.Frame):
         
         self.undo(len(self.game_state.moves))
 
-        # review_thread = Thread(target=lambda: self.review())
-        # review_thread.start()
-        self.review()
+        review_thread = Thread(target=lambda: self.review())
+        review_thread.start()
     
     def review(self):
         while len(self.game_state.redo_stack) > 1:
@@ -493,29 +493,31 @@ class GoClient(wx.Frame):
                     highest_hsl_val = prob[1]
                     highest_hsl_loc = prob[0]
             
-            hsl = self.loc_state_to_coord(highest_hsl_loc)
-            actual = self.loc_state_to_coord(self.game_state.redo_stack[-1][0][1])
+            self.hsl_move = self.loc_state_to_coord(highest_hsl_loc)
+            actual_move = self.loc_state_to_coord(self.game_state.redo_stack[-1][0][1])
 
-            if hsl == actual:
+            if self.hsl_move == actual_move:
                 continue
 
-            if abs(hsl.x - actual.x) > 4 or abs(hsl.y - actual.y) > 4:
+            if abs(self.hsl_move.x - actual_move.x) > 4 or abs(self.hsl_move.y - actual_move.y) > 4:
                 continue
 
-            hsl_score = self.get_kata_score_lead([hsl])[1]
-            actual_score = self.get_kata_score_lead([actual])[1]
+            hsl_score = self.get_kata_score_lead([self.hsl_move])[1]
+            actual_score = self.get_kata_score_lead([actual_move])[1]
 
-            print(f"HSL= {str(hsl)}: {hsl_score:.2f} | Actual= {str(actual)}: {actual_score:.2f}")
+            print(f"HSL= {str(self.hsl_move)}: {hsl_score:.2f} | Actual= {str(actual_move)}: {actual_score:.2f}")
             
             if (hsl_score + 1) > actual_score:
                 continue
 
             allowMoves = []
-            for x in range(max(actual.x - 4, 0), min(actual.x + 4, 18) + 1):
-                for y in range(max(actual.y - 4, 0), min(actual.y + 4, 18) + 1):
+            for x in range(max(actual_move.x - 4, 0), min(actual_move.x + 4, 18) + 1):
+                for y in range(max(actual_move.y - 4, 0), min(actual_move.y + 4, 18) + 1):
                     allowMoves.append(Coord(x, y))
             
-            kata_move = self.get_kata_score_lead(allowMoves)[0]
+            self.kata_move = self.get_kata_score_lead(allowMoves)[0]
+            
+            time.sleep(1)
 
     def init_ui(self):
         panel = wx.Panel(self)
@@ -608,7 +610,7 @@ class GoClient(wx.Frame):
             "komi": 6.5,
             "boardXSize": 19,
             "boardYSize": 19,
-            "maxVisits": 500
+            "maxVisits": 10
         }
         self.kata_server.query_counter += 1
 
