@@ -471,16 +471,23 @@ class GoClient(wx.Frame):
     def loc_kata_to_state(self, kata):
         return self.loc_coord_to_state(self.loc_kata_to_coord(kata))
 
-    def __init__(self, hsl_server_command, game_state, player):
+    def __init__(self, hsl_model_path, hsl_device, katago_exe_path, katago_analysis_cfg_path, katago_model_path, game_state, player):
         super().__init__(parent=None, title="HumanSLNetViz")
-        self.hsl_server_command = hsl_server_command
+        self.hsl_model_path = hsl_model_path
+        self.hsl_device = hsl_device
+
+        self.katago_exe_path = katago_exe_path
+        self.katago_analysis_cfg_path = katago_analysis_cfg_path
+        self.katago_model_path = katago_model_path
+
         self.game_state = game_state
         self.board_size = self.game_state.board_size
+
         self.player = player
 
         self.SetDropTarget(FileDropTarget(self))
 
-        self.hsl_server_process = self.start_server(hsl_server_command)
+        self.hsl_server_process = self.start_server()
         self.init_server(self.hsl_server_process)
 
         self.start_kata_server()
@@ -586,10 +593,10 @@ class GoClient(wx.Frame):
         self.slider_window.SetPosition((pos_x, pos_y))
 
 
-    def start_server(self, server_command):
+    def start_server(self):
         # print(f"Starting hsl server with command: {server_command}")
         server_process = subprocess.Popen(
-            server_command,
+            f"python humanslnet_server.py -checkpoint {self.hsl_model_path} -device {self.hsl_device}",
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -627,9 +634,9 @@ class GoClient(wx.Frame):
                 self.handle_error(f"Unexpected response from server: {response}")
 
     def start_kata_server(self):
-        self.kata_server = KataGo("D:/Other/Mega/MEGAsync/Go/KataGo-OpenCL/katago.exe",
-                                  "D:/Other/Mega/MEGAsync/Go/KataGo-OpenCL/analysis_example.cfg",
-                                  "D:/Other/Mega/MEGAsync/Go/KataGo-OpenCL/kata1-b18c384nbt-s8980552704-d4047449493.bin.gz")
+        self.kata_server = KataGo(self.katago_exe_path,
+                                  self.katago_analysis_cfg_path,
+                                  self.katago_model_path)
         
         atexit.register(self.kata_server.close)
     
@@ -786,23 +793,17 @@ class GoClient(wx.Frame):
         event.Skip()
 
 def main():
+    # hsl_reviewer [HSL_MODEL] [HSL_DEVICE] [KATAGO_EXE] [KATAGO_ANALYSIS_CFG] [KATAGO_MODEL] (SGF) (PLAYER)
+    game_state = GameState(19, GameState.RULES_JAPANESE)
+    if len(sys.argv) > 6:
+        game_state = load_sgf_game_state(sys.argv[6])
+
     player = "b"
-    sgf_file = None
-
-    if len(sys.argv) > 1:
-        player = sys.argv[1]
-    if len(sys.argv) > 2:
-        sgf_file = sys.argv[2]
-
-    hsl_server_command = f"python humanslnet_server.py -checkpoint D:/Other/Mega/MEGAsync/Go/KataGo-Assets/Models/b18c384nbt-humanv0-test.ckpt -device cuda:0"
-
-    if sgf_file is not None:
-        game_state = load_sgf_game_state(sgf_file)
-    else:
-        game_state = GameState(19, GameState.RULES_JAPANESE)
+    if len(sys.argv) > 7:
+        player = sys.argv[7]
 
     app = wx.App()
-    client = GoClient(hsl_server_command, game_state, player)
+    client = GoClient(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], game_state, player)
     client.Bind(wx.EVT_CLOSE, client.on_close)
     client.Show()
     client.slider_window.Show()

@@ -1,0 +1,1 @@
+python hsl_reviewer.py D:/Other/Mega/MEGAsync/Go/KataGo-Assets/Models/b18c384nbt-humanv0-test.ckpt cuda:0 D:/Other/Mega/MEGAsync/Go/KataGo-OpenCL/katago.exe D:/Other/Mega/MEGAsync/Go/KataGo-OpenCL/analysis_example.cfg D:/Other/Mega/MEGAsync/Go/KataGo-OpenCL/kata1-b18c384nbt-s8980552704-d4047449493.bin.gz
