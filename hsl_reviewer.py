@@ -499,16 +499,23 @@ class GoClient(wx.Frame):
             if hsl == actual:
                 continue
 
-            if abs(hsl.x - actual.x) > 7 or abs(hsl.y - actual.y) > 7:
+            if abs(hsl.x - actual.x) > 4 or abs(hsl.y - actual.y) > 4:
                 continue
 
-            hsl_score = self.get_kata_score_lead([hsl])
-            actual_score = self.get_kata_score_lead([actual])
+            hsl_score = self.get_kata_score_lead([hsl])[1]
+            actual_score = self.get_kata_score_lead([actual])[1]
+
+            print(f"HSL= {str(hsl)}: {hsl_score:.2f} | Actual= {str(actual)}: {actual_score:.2f}")
             
             if (hsl_score + 1) > actual_score:
                 continue
 
-            print(f"HSL= {str(hsl)}: {hsl_score:.2f} | Actual= {str(actual)}: {actual_score:.2f}")
+            allowMoves = []
+            for x in range(max(actual.x - 4, 0), min(actual.x + 4, 18) + 1):
+                for y in range(max(actual.y - 4, 0), min(actual.y + 4, 18) + 1):
+                    allowMoves.append(Coord(x, y))
+            
+            kata_move = self.get_kata_score_lead(allowMoves)[0]
 
     def init_ui(self):
         panel = wx.Panel(self)
@@ -613,7 +620,15 @@ class GoClient(wx.Frame):
             }]
 
         result = self.kata_server.query_raw(query)
-        return result["moveInfos"][0]["scoreLead"]
+
+        best_score = 1_000
+        best_score_loc = ""
+        for move in result["moveInfos"]:
+            if move["scoreLead"] < best_score:
+                best_score = move["scoreLead"]
+                best_score_loc = move["move"]
+
+        return (self.loc_kata_to_coord(best_score_loc), best_score)
 
     def send_command(self, server_process, command):
         # print(f"Sending: {json.dumps(command)}")
