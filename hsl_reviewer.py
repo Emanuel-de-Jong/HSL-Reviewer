@@ -564,6 +564,8 @@ class GoClient(wx.Frame):
             
             self.board.should_draw_review_grid = False
             self.board.should_draw_review_moves = False
+        
+        print("=== REVIEW DONE ===")
 
     def init_ui(self):
         color_buttons_panel = wx.Panel(self)
