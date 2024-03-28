@@ -435,6 +435,12 @@ class GoClient(wx.Frame):
 
     def loc_coord_to_kata(self, coord):
         return "ABCDEFGHJKLMNOPQRSTUVWXYZ"[coord[0]] + str(19 - coord[1])
+    
+    def loc_state_to_kata(self, state):
+        return self.loc_coord_to_kata(self.loc_state_to_coord(state))
+    
+    def loc_kata_to_state(self, kata):
+        return self.loc_coord_to_state(self.loc_kata_to_coord(kata))
 
     def __init__(self, hsl_server_command, game_state):
         super().__init__(parent=None, title="HumanSLNetViz")
@@ -453,7 +459,7 @@ class GoClient(wx.Frame):
         
         self.undo(len(self.game_state.moves) - 3)
 
-        # self.get_kata_score_lead()
+        # self.get_kata_score_lead([(5, 5)])
         self.review()
     
     def review(self):
@@ -546,14 +552,14 @@ class GoClient(wx.Frame):
         
         atexit.register(self.kata_server.close)
     
-    def get_kata_score_lead(self):
+    def get_kata_score_lead(self, allowMoves = []):
         moves = []
         for pla, loc in self.game_state.moves:
             color = "b"
             if (pla == 2):
                 color = "w"
             
-            move = "ABCDEFGHJKLMNOPQRSTUVWXYZ"[self.game_state.board.loc_x(loc)] + str(19 - self.game_state.board.loc_y(loc))
+            move = self.loc_state_to_kata(loc)
             moves.append((color, move))
 
         query = {
@@ -563,19 +569,19 @@ class GoClient(wx.Frame):
             "komi": 6.5,
             "boardXSize": 19,
             "boardYSize": 19,
-            "maxVisits": 2500,
-            "allowMoves": [{
-                "player": "b",
-                "moves": ["P4"],
-                "untilDepth": 1
-            }]
+            "maxVisits": 500
         }
         self.kata_server.query_counter += 1
 
-        result = self.kata_server.query_raw(query)
+        if allowMoves:
+            query["allowMoves"] = [{
+                "player": "w",
+                "moves": [self.loc_coord_to_kata(coord) for coord in allowMoves],
+                "untilDepth": 1
+            }]
 
-        # print(result["moveInfos"][0]["scoreLead"])
-        print(result["moveInfos"])
+        result = self.kata_server.query_raw(query)
+        return result["moveInfos"][0]["scoreLead"]
 
     def send_command(self, server_process, command):
         print(f"Sending: {json.dumps(command)}")
