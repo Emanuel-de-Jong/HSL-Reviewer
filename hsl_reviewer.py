@@ -425,10 +425,10 @@ class ColorButtons(wx.Panel):
         hbox = wx.BoxSizer(wx.HORIZONTAL)
 
         self.radio_button_black = wx.RadioButton(self, label="Black")
-        hbox.Add(self.radio_button_black, proportion=1, flag=wx.EXPAND | wx.ALL, border=5)
+        hbox.Add(self.radio_button_black, proportion=0, flag=wx.ALIGN_LEFT, border=5)
 
         self.radio_button_white = wx.RadioButton(self, label="White")
-        hbox.Add(self.radio_button_white, proportion=1, flag=wx.EXPAND | wx.ALL, border=5)
+        hbox.Add(self.radio_button_white, proportion=0, flag=wx.ALIGN_LEFT, border=5)
 
         vbox.Add(hbox, proportion=0, flag=wx.EXPAND | wx.ALL, border=5)
         self.SetSizer(vbox)
@@ -486,6 +486,9 @@ class GoClient(wx.Frame):
         self.init_ui()
         
         self.undo(len(self.game_state.moves))
+
+        review_thread = Thread(target=lambda: self.review())
+        review_thread.start()
     
     def review(self):
         while len(self.game_state.redo_stack) > 1:
@@ -516,7 +519,7 @@ class GoClient(wx.Frame):
             hsl_score = self.get_kata_score_lead(HSL_ACTUAL_COMPARE_VISITS, [self.hsl_move])[1]
             actual_score = self.get_kata_score_lead(HSL_ACTUAL_COMPARE_VISITS, [self.actual_move])[1]
 
-            # print(f"HSL= {str(self.hsl_move)}: {hsl_score:.2f} | Actual= {str(self.actual_move)}: {actual_score:.2f}")
+            print(f"HSL= {str(self.hsl_move)}: {hsl_score:.2f} | Actual= {str(self.actual_move)}: {actual_score:.2f}")
             
             if (hsl_score + HSL_MIN_SCORE_DIFF) > actual_score:
                 continue
@@ -544,22 +547,28 @@ class GoClient(wx.Frame):
             self.board.should_draw_review_moves = False
 
     def init_ui(self):
-        # color_buttons_panel = wx.Panel(self)
-        # self.color_buttons = ColorButtons(color_buttons_panel)
-        # sizer = wx.BoxSizer(wx.VERTICAL)
-        # sizer.Add(self.color_buttons, 1, wx.EXPAND)
-        # color_buttons_panel.SetSizer(sizer)
+        color_buttons_panel = wx.Panel(self)
+        self.color_buttons = ColorButtons(color_buttons_panel)
+        color_buttons_sizer = wx.BoxSizer(wx.VERTICAL)
+        color_buttons_sizer.Add(self.color_buttons, proportion=0, flag=wx.EXPAND | wx.ALL)
+        color_buttons_panel.SetSizer(color_buttons_sizer)
 
         board_panel = wx.Panel(self)
         self.board = GoBoard(board_panel, self.game_state)
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.board, 1, wx.EXPAND)
-        board_panel.SetSizer(sizer)
+        board_sizer = wx.BoxSizer(wx.VERTICAL)
+        board_sizer.Add(self.board, proportion=1, flag=wx.EXPAND | wx.ALL)
+        board_panel.SetSizer(board_sizer)
         self.Bind(wx.EVT_CHAR_HOOK, self.on_key_down)
 
-        # Set the initial size of the window based on the board size
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(color_buttons_panel, proportion=0, flag=wx.EXPAND | wx.ALL)
+        main_sizer.Add(board_panel, proportion=1, flag=wx.EXPAND | wx.ALL)
+
+        self.SetSizer(main_sizer)
+        main_sizer.Fit(self)
+
         board_width, board_height = self.board.get_desired_size()
-        self.SetClientSize(board_width, board_height)
+        self.SetClientSize(board_width, board_height + self.color_buttons.GetSize().GetHeight())
         screen_width, screen_height = wx.DisplaySize()
         frame_width, frame_height = self.GetSize()
         pos_x = (screen_width - frame_width) // 2 - 300
@@ -756,7 +765,8 @@ class GoClient(wx.Frame):
         self.board.game_state = game_state
         self.board.board_size = self.board_size
 
-        self.init_server()
+        self.init_server(self.hsl_server_process)
+        self.undo(len(self.game_state.moves))
 
         self.board.Refresh()
         self.board.refresh_model()
