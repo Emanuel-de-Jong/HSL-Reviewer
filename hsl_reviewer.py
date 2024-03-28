@@ -117,6 +117,10 @@ class GoBoard(wx.Panel):
         return round((py - self.margin - self.cell_size / 2) / self.cell_size)
 
     def screenshot(self, filename):
+        output_path = os.getcwd() + "/output"
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+
         filename += ".png"
         
         size = self.GetSize()
@@ -126,7 +130,7 @@ class GoBoard(wx.Panel):
 
         dc = wx.ClientDC(self)
         mem_dc.Blit(0, 0, size.width, size.height, dc, 0, 0)
-        bitmap.SaveFile(filename, wx.BITMAP_TYPE_PNG)
+        bitmap.SaveFile(output_path + "/" + filename, wx.BITMAP_TYPE_PNG)
         mem_dc.SelectObject(wx.NullBitmap)
 
     def on_paint(self, event):
@@ -735,10 +739,10 @@ class GoClient(wx.Frame):
         event.Skip()
 
 def main():
-    repo_path = "D:/Coding/Repos/HSL-Reviewer"
-    sgf_file = f"{repo_path}/test.sgf"
+    player = sys.argv[1]
+    sgf_file = sys.argv[2]
 
-    hsl_server_command = f"python {repo_path}/humanslnet_server.py -checkpoint D:/Other/Mega/MEGAsync/Go/KataGo-Assets/Models/b18c384nbt-humanv0-test.ckpt -device cuda:0"
+    hsl_server_command = f"python humanslnet_server.py -checkpoint D:/Other/Mega/MEGAsync/Go/KataGo-Assets/Models/b18c384nbt-humanv0-test.ckpt -device cuda:0"
 
     if sgf_file is not None:
         game_state = load_sgf_game_state(sgf_file)
