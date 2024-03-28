@@ -8,6 +8,8 @@ import atexit
 import datetime
 import time
 import math
+import random
+import string
 
 from gamestate import GameState
 from board import Board
@@ -21,8 +23,12 @@ import matplotlib.colors as mcolors
 import numpy as np
 
 player = "w"
-grid_size = 7
-grid_radius = math.floor(grid_size / 2)
+
+GRID_SIZE = 7
+GRID_RADIUS = math.floor(GRID_SIZE / 2)
+
+HSL_ACTUAL_COMPARE_VISITS = 500
+KATA_BEST_VISITS = 2_500
 
 def interpolateColor(points,x):
     for i in range(len(points)):
@@ -97,7 +103,7 @@ class GoBoard(wx.Panel):
 
     def get_desired_size(self):
         board_width = self.board_size * self.cell_size + 2 * self.margin
-        board_height = self.board_size * self.cell_size + self.cell_size + 2 * self.margin
+        board_height = self.board_size * self.cell_size + 2 * self.margin
         return board_width, board_height
 
     def px_of_x(self, x):
@@ -159,25 +165,15 @@ class GoBoard(wx.Panel):
                     gc.DrawEllipse(self.px_of_x(x) - (self.cell_size // 2 - 2), self.py_of_y(y) - (self.cell_size // 2 - 2), self.cell_size - 4, self.cell_size - 4)
 
         gc.SetBrush(wx.Brush(wx.BLACK, wx.TRANSPARENT))
-        # for x in range(self.board_size):
-        #     for y in range(self.board_size):
-        #         loc = self.game_state.board.loc(x, y)
-
-        #         if len(self.game_state.moves) > 0 and self.game_state.moves[-1][1] == loc:
-        #             if self.game_state.moves[-1][0] == Board.BLACK:
-        #                 gc.SetPen(wx.Pen(wx.Colour(0, 120, 255), 2))
-        #             else:
-        #                 gc.SetPen(wx.Pen(wx.Colour(0, 50, 255), 2))
-        #             gc.DrawEllipse(self.px_of_x(x) - (self.cell_size // 2 - 6), self.py_of_y(y) - (self.cell_size // 2 - 6), self.cell_size - 12, self.cell_size - 12)
         
         if self.should_draw_review_grid:
             parent = self.GetParent().GetParent()
 
             gc.SetPen(wx.Pen(wx.BLUE, 4))
-            x = self.px_of_x(max(parent.actual_move.x - grid_radius, 0)) - self.cell_size / 2
-            y = self.py_of_y(max(parent.actual_move.y - grid_radius, 0)) - self.cell_size / 2
-            w = self.px_of_x(min(parent.actual_move.x + grid_radius, 18)) - x + self.cell_size / 2
-            h = self.py_of_y(min(parent.actual_move.y + grid_radius, 18)) - y + self.cell_size / 2
+            x = self.px_of_x(max(parent.actual_move.x - GRID_RADIUS, 0)) - self.cell_size / 2
+            y = self.py_of_y(max(parent.actual_move.y - GRID_RADIUS, 0)) - self.cell_size / 2
+            w = self.px_of_x(min(parent.actual_move.x + GRID_RADIUS, 18)) - x + self.cell_size / 2
+            h = self.py_of_y(min(parent.actual_move.y + GRID_RADIUS, 18)) - y + self.cell_size / 2
             gc.DrawRectangle(x, y, w, h)
 
             if self.should_draw_review_moves:
@@ -203,59 +199,6 @@ class GoBoard(wx.Panel):
             text_y = self.py_of_y(y) - text_height // 2
             gc.DrawText(row_label, self.px_of_x(-0.8)-text_width//2, text_y)
             gc.DrawText(row_label, self.px_of_x(self.board_size-0.2)-text_width//2, text_y)
-
-        if self.latest_model_response is not None:
-            bigger_font = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
-            small_font = wx.Font(8, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
-
-            value_prediction = self.latest_model_response["value"]
-            score_prediction = self.latest_model_response["lead"]
-            scorestdev_prediction = self.latest_model_response["scorestdev"]
-            sign = (1 if self.game_state.board.pla == Board.BLACK else -1)
-
-            gc.SetBrush(wx.Brush(wx.BLACK))
-            gc.SetPen(wx.Pen(wx.BLACK,1))
-            gc.SetFont(bigger_font,wx.BLACK)
-
-            black_wr = 0.5 + 0.5 * (value_prediction[0] - value_prediction[1]) * sign
-            label = "Raw NN Black Win%% %.1f" % (black_wr*100.0)
-            text_width, text_height = gc.GetTextExtent(label)
-            text_x = self.px_of_x(0)
-            text_y = self.py_of_y(self.board_size+0.6) - text_height // 2
-            gc.DrawText(label, text_x, text_y)
-
-            black_score = score_prediction * sign
-            label = "Raw NN Black ScoreMean %.1f +/- %.1f (2 stdv)" % (black_score, 2 * scorestdev_prediction)
-            text_width, text_height = gc.GetTextExtent(label)
-            text_x = self.px_of_x(8)
-            text_y = self.py_of_y(self.board_size+0.6) - text_height // 2
-            gc.DrawText(label, text_x, text_y)
-
-            # moves_and_probs0 = dict(self.latest_model_response["moves_and_probs0"])
-            # # print(moves_and_probs0)
-            # for y in range(self.board_size):
-            #     for x in range(self.board_size):
-            #         loc = self.game_state.board.loc(x, y)
-            #         max_prob = max(moves_and_probs0.values())
-            #         if loc in moves_and_probs0:
-            #             prob = moves_and_probs0[loc]
-            #             r,g,b,a = policy_color(prob / max_prob ** 0.7)
-            #             # print(r,g,b,a,prob)
-            #             gc.SetBrush(wx.Brush(wx.Colour(r,g,b,alpha=round(a*0.9))))
-            #             gc.SetPen(wx.Pen(wx.Colour(0,0,0,alpha=a),1))
-            #             gc.SetFont(small_font,wx.Colour(0,0,0,alpha=a))
-            #             gc.DrawRectangle(
-            #                 self.px_of_x(x-0.45),
-            #                 self.py_of_y(y-0.45),
-            #                 self.px_of_x(x+0.45)-self.px_of_x(x-0.45),
-            #                 self.py_of_y(y+0.45)-self.py_of_y(y-0.45),
-            #             )
-
-            #             label = "%.1f" % (prob*100.0)
-            #             text_width, text_height = gc.GetTextExtent(label)
-            #             text_x = self.px_of_x(x) - text_width // 2
-            #             text_y = self.py_of_y(y) - text_height // 2
-            #             gc.DrawText(label, text_x, text_y)
 
 
     def on_click(self, event):
@@ -536,33 +479,35 @@ class GoClient(wx.Frame):
             if self.hsl_move == self.actual_move:
                 continue
 
-            if abs(self.hsl_move.x - self.actual_move.x) > grid_radius or abs(self.hsl_move.y - self.actual_move.y) > grid_radius:
+            if abs(self.hsl_move.x - self.actual_move.x) > GRID_RADIUS or abs(self.hsl_move.y - self.actual_move.y) > GRID_RADIUS:
                 continue
 
-            hsl_score = self.get_kata_score_lead([self.hsl_move])[1]
-            actual_score = self.get_kata_score_lead([self.actual_move])[1]
+            hsl_score = self.get_kata_score_lead(HSL_ACTUAL_COMPARE_VISITS, [self.hsl_move])[1]
+            actual_score = self.get_kata_score_lead(HSL_ACTUAL_COMPARE_VISITS, [self.actual_move])[1]
 
-            print(f"HSL= {str(self.hsl_move)}: {hsl_score:.2f} | Actual= {str(self.actual_move)}: {actual_score:.2f}")
+            # print(f"HSL= {str(self.hsl_move)}: {hsl_score:.2f} | Actual= {str(self.actual_move)}: {actual_score:.2f}")
             
             if (hsl_score + 1) > actual_score:
                 continue
 
-            allowMoves = []
-            for x in range(max(self.actual_move.x - grid_radius, 0), min(self.actual_move.x + grid_radius, 18) + 1):
-                for y in range(max(self.actual_move.y - grid_radius, 0), min(self.actual_move.y + grid_radius, 18) + 1):
-                    allowMoves.append(Coord(x, y))
+            allow_moves = []
+            for x in range(max(self.actual_move.x - GRID_RADIUS, 0), min(self.actual_move.x + GRID_RADIUS, 18) + 1):
+                for y in range(max(self.actual_move.y - GRID_RADIUS, 0), min(self.actual_move.y + GRID_RADIUS, 18) + 1):
+                    allow_moves.append(Coord(x, y))
             
-            self.kata_move = self.get_kata_score_lead(allowMoves)[0]
+            self.kata_move = self.get_kata_score_lead(KATA_BEST_VISITS, allow_moves)[0]
+
+            rnd_filename = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
 
             self.board.should_draw_review_grid = True
             self.board.Refresh()
             time.sleep(0.25)
-            self.board.screenshot("test_1")
+            self.board.screenshot(rnd_filename + "_1")
 
             self.board.should_draw_review_moves = True
             self.board.Refresh()
             time.sleep(0.25)
-            self.board.screenshot("test_2")
+            self.board.screenshot(rnd_filename + "_2")
             
             self.board.should_draw_review_grid = False
             self.board.should_draw_review_moves = False
@@ -641,7 +586,7 @@ class GoClient(wx.Frame):
         
         atexit.register(self.kata_server.close)
     
-    def get_kata_score_lead(self, allowMoves = []):
+    def get_kata_score_lead(self, max_visits, allow_moves = []):
         moves = []
         for pla, loc in self.game_state.moves:
             color = "b"
@@ -658,14 +603,14 @@ class GoClient(wx.Frame):
             "komi": 6.5,
             "boardXSize": 19,
             "boardYSize": 19,
-            "maxVisits": 10
+            "maxVisits": max_visits
         }
         self.kata_server.query_counter += 1
 
-        if allowMoves:
+        if allow_moves:
             query["allowMoves"] = [{
                 "player": player,
-                "moves": [self.loc_coord_to_kata(coord) for coord in allowMoves],
+                "moves": [self.loc_coord_to_kata(coord) for coord in allow_moves],
                 "untilDepth": 1
             }]
 
