@@ -7,6 +7,7 @@ from threading import Thread
 import atexit
 import datetime
 import time
+import math
 
 from gamestate import GameState
 from board import Board
@@ -20,6 +21,9 @@ import matplotlib.colors as mcolors
 import numpy as np
 
 player = "w"
+grid_size = 9
+grid_radius = math.floor(grid_size / 2)
+print(grid_radius)
 
 def interpolateColor(points,x):
     for i in range(len(points)):
@@ -82,6 +86,8 @@ class GoBoard(wx.Panel):
         self.cell_size = cell_size
         self.margin = margin
 
+        self.take_screenshot = False
+
         self.sgfmeta = SGFMetadata()
         self.latest_model_response = None
 
@@ -141,16 +147,32 @@ class GoBoard(wx.Panel):
                     gc.DrawEllipse(self.px_of_x(x) - (self.cell_size // 2 - 2), self.py_of_y(y) - (self.cell_size // 2 - 2), self.cell_size - 4, self.cell_size - 4)
 
         gc.SetBrush(wx.Brush(wx.BLACK, wx.TRANSPARENT))
-        for x in range(self.board_size):
-            for y in range(self.board_size):
-                loc = self.game_state.board.loc(x, y)
+        # for x in range(self.board_size):
+        #     for y in range(self.board_size):
+        #         loc = self.game_state.board.loc(x, y)
 
-                if len(self.game_state.moves) > 0 and self.game_state.moves[-1][1] == loc:
-                    if self.game_state.moves[-1][0] == Board.BLACK:
-                        gc.SetPen(wx.Pen(wx.Colour(0, 120, 255), 2))
-                    else:
-                        gc.SetPen(wx.Pen(wx.Colour(0, 50, 255), 2))
-                    gc.DrawEllipse(self.px_of_x(x) - (self.cell_size // 2 - 6), self.py_of_y(y) - (self.cell_size // 2 - 6), self.cell_size - 12, self.cell_size - 12)
+        #         if len(self.game_state.moves) > 0 and self.game_state.moves[-1][1] == loc:
+        #             if self.game_state.moves[-1][0] == Board.BLACK:
+        #                 gc.SetPen(wx.Pen(wx.Colour(0, 120, 255), 2))
+        #             else:
+        #                 gc.SetPen(wx.Pen(wx.Colour(0, 50, 255), 2))
+        #             gc.DrawEllipse(self.px_of_x(x) - (self.cell_size // 2 - 6), self.py_of_y(y) - (self.cell_size // 2 - 6), self.cell_size - 12, self.cell_size - 12)
+        
+        if self.take_screenshot:
+            parent = self.GetParent().GetParent()
+
+            gc.SetPen(wx.Pen(wx.BLUE, 4))
+            x = self.px_of_x(max(parent.actual_move.x - grid_radius, 0)) - self.cell_size / 2
+            y = self.py_of_y(max(parent.actual_move.y - grid_radius, 0)) - self.cell_size / 2
+            w = self.px_of_x(min(parent.actual_move.x + grid_radius, 18)) - x + self.cell_size / 2
+            h = self.py_of_y(min(parent.actual_move.y + grid_radius, 18)) - y + self.cell_size / 2
+            gc.DrawRectangle(x, y, w, h)
+
+            gc.SetPen(wx.Pen(wx.BLACK, 4))
+            gc.DrawRectangle(self.px_of_x(parent.hsl_move.x) - (self.cell_size // 2 - 6), self.py_of_y(parent.hsl_move.y) - (self.cell_size // 2 - 6), self.cell_size - 12, self.cell_size - 12)
+
+            if (parent.kata_move != parent.hsl_move):
+                gc.DrawEllipse(self.px_of_x(parent.kata_move.x) - (self.cell_size // 2 - 6), self.py_of_y(parent.kata_move.y) - (self.cell_size // 2 - 6), self.cell_size - 12, self.cell_size - 12)
 
         # Draw column labels
         gc.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL), wx.BLACK)
@@ -477,6 +499,8 @@ class GoClient(wx.Frame):
         review_thread.start()
     
     def review(self):
+        time.sleep(2)
+
         while len(self.game_state.redo_stack) > 1:
             self.redo()
 
@@ -494,30 +518,33 @@ class GoClient(wx.Frame):
                     highest_hsl_loc = prob[0]
             
             self.hsl_move = self.loc_state_to_coord(highest_hsl_loc)
-            actual_move = self.loc_state_to_coord(self.game_state.redo_stack[-1][0][1])
+            self.actual_move = self.loc_state_to_coord(self.game_state.redo_stack[-1][0][1])
 
-            if self.hsl_move == actual_move:
+            if self.hsl_move == self.actual_move:
                 continue
 
-            if abs(self.hsl_move.x - actual_move.x) > 4 or abs(self.hsl_move.y - actual_move.y) > 4:
+            if abs(self.hsl_move.x - self.actual_move.x) > grid_radius or abs(self.hsl_move.y - self.actual_move.y) > grid_radius:
                 continue
 
             hsl_score = self.get_kata_score_lead([self.hsl_move])[1]
-            actual_score = self.get_kata_score_lead([actual_move])[1]
+            actual_score = self.get_kata_score_lead([self.actual_move])[1]
 
-            print(f"HSL= {str(self.hsl_move)}: {hsl_score:.2f} | Actual= {str(actual_move)}: {actual_score:.2f}")
+            print(f"HSL= {str(self.hsl_move)}: {hsl_score:.2f} | Actual= {str(self.actual_move)}: {actual_score:.2f}")
             
             if (hsl_score + 1) > actual_score:
                 continue
 
             allowMoves = []
-            for x in range(max(actual_move.x - 4, 0), min(actual_move.x + 4, 18) + 1):
-                for y in range(max(actual_move.y - 4, 0), min(actual_move.y + 4, 18) + 1):
+            for x in range(max(self.actual_move.x - grid_radius, 0), min(self.actual_move.x + grid_radius, 18) + 1):
+                for y in range(max(self.actual_move.y - grid_radius, 0), min(self.actual_move.y + grid_radius, 18) + 1):
                     allowMoves.append(Coord(x, y))
             
             self.kata_move = self.get_kata_score_lead(allowMoves)[0]
-            
-            time.sleep(1)
+
+            self.board.take_screenshot = True
+            self.board.Refresh()
+            time.sleep(5)
+            self.board.take_screenshot = False
 
     def init_ui(self):
         panel = wx.Panel(self)
