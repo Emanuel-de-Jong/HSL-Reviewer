@@ -414,6 +414,19 @@ class SliderWindow(wx.Frame):
         self.GetParent().board.set_sgfmeta(sgfmeta)
         self.GetParent().board.refresh_model()
 
+class Coord():
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    
+    def __eq__(self, other):
+        if isinstance(other, Coord):
+            return self.x == other.x and self.y == other.y
+        return False
+    
+    def __str__(self):
+        return f"({self.x}, {self.y})"
+
 class FileDropTarget(wx.FileDropTarget):
     def __init__(self, window):
         super().__init__()
@@ -424,17 +437,17 @@ class FileDropTarget(wx.FileDropTarget):
 
 class GoClient(wx.Frame):
     def loc_state_to_coord(self, state):
-        return (self.game_state.board.loc_x(state), self.game_state.board.loc_y(state))
+        return Coord(self.game_state.board.loc_x(state), self.game_state.board.loc_y(state))
 
     def loc_coord_to_state(self, coord):
-        return self.game_state.board.loc(coord[0], coord[1])
+        return self.game_state.board.loc(coord.x, coord.y)
 
     def loc_kata_to_coord(self, kata):
         chars = [char for char in kata]
-        return (ord(chars[0]) - 65, 19 - int(chars[1]))
+        return Coord(ord(chars[0]) - 65, 19 - int(chars[1]))
 
     def loc_coord_to_kata(self, coord):
-        return "ABCDEFGHJKLMNOPQRSTUVWXYZ"[coord[0]] + str(19 - coord[1])
+        return "ABCDEFGHJKLMNOPQRSTUVWXYZ"[coord.x] + str(19 - coord.y)
     
     def loc_state_to_kata(self, state):
         return self.loc_coord_to_kata(self.loc_state_to_coord(state))
@@ -457,13 +470,16 @@ class GoClient(wx.Frame):
 
         self.init_ui()
         
-        self.undo(len(self.game_state.moves) - 3)
+        self.undo(len(self.game_state.moves))
 
-        # self.get_kata_score_lead([(5, 5)])
+        # review_thread = Thread(target=lambda: self.review())
+        # review_thread.start()
         self.review()
     
     def review(self):
-        while self.game_state.can_redo():
+        while len(self.game_state.redo_stack) > 1:
+            self.redo()
+
             moves_and_probs0 = self.board.latest_model_response["moves_and_probs0"]
 
             highest_hsl_val = 0
@@ -475,8 +491,20 @@ class GoClient(wx.Frame):
             
             hsl = self.loc_state_to_coord(highest_hsl_loc)
             actual = self.loc_state_to_coord(self.game_state.redo_stack[-1][0][1])
+
+            if hsl == actual:
+                continue
+
+            if abs(hsl.x - actual.x) > 7 or abs(hsl.y - actual.y) > 7:
+                continue
+
+            hsl_score = self.get_kata_score_lead([hsl])
+            actual_score = self.get_kata_score_lead([actual])
             
-            break
+            if (hsl_score + 1) > actual_score:
+                continue
+
+            print(f"HSL= {str(hsl)}: {hsl_score:.2f} | Actual= {str(actual)}: {actual_score:.2f}")
 
     def init_ui(self):
         panel = wx.Panel(self)
@@ -506,7 +534,7 @@ class GoClient(wx.Frame):
 
 
     def start_server(self, server_command):
-        print(f"Starting hsl server with command: {server_command}")
+        # print(f"Starting hsl server with command: {server_command}")
         server_process = subprocess.Popen(
             server_command,
             stdin=subprocess.PIPE,
@@ -584,12 +612,12 @@ class GoClient(wx.Frame):
         return result["moveInfos"][0]["scoreLead"]
 
     def send_command(self, server_process, command):
-        print(f"Sending: {json.dumps(command)}")
+        # print(f"Sending: {json.dumps(command)}")
         server_process.stdin.write(json.dumps(command) + "\n")
         server_process.stdin.flush()
 
     def receive_response(self, server_process):
-        print(f"Waiting for response")
+        # print(f"Waiting for response")
         while True:
             returncode = server_process.poll()
             if returncode is not None:
@@ -597,7 +625,7 @@ class GoClient(wx.Frame):
             response = server_process.stdout.readline().strip()
             if response != "":
                 break
-        print(f"Got response (first 100 chars): {str(response[:100])}")
+        # print(f"Got response (first 100 chars): {str(response[:100])}")
         return json.loads(response)
 
     def handle_error(self, error_message):
