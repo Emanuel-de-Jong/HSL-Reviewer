@@ -1,9 +1,9 @@
-# KataGo
+# HSL-Reviewer
 
 ## Screenshots
-![ExampleQuestion](/Screenshots/gUgjQL_1.png)
+![ExampleQuestion](/screenshots/gUgjQL_1.png)
 
-![ExampleAnswer](/Screenshots/gUgjQL_2.png)
+![ExampleAnswer](/screenshots/gUgjQL_2.png)
 
 X = Played in game<br>
 O = HSL policy<br>
