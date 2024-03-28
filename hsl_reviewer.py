@@ -22,8 +22,6 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
 
-player = "b"
-
 GRID_SIZE = 7
 GRID_RADIUS = math.floor(GRID_SIZE / 2)
 
@@ -418,7 +416,7 @@ class Coord():
         return f"({self.x}, {self.y})"
 
 class ColorButtons(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent, player):
         super().__init__(parent)
 
         vbox = wx.BoxSizer(wx.VERTICAL)
@@ -436,11 +434,14 @@ class ColorButtons(wx.Panel):
         self.radio_button_black.Bind(wx.EVT_RADIOBUTTON, self.on_radio_button_black_select)
         self.radio_button_white.Bind(wx.EVT_RADIOBUTTON, self.on_radio_button_white_select)
 
+        if player == "w":
+            self.radio_button_white.SetValue(True)
+
     def on_radio_button_black_select(self, event):
-        player = "b"
+        self.GetParent().GetParent().player = "b"
 
     def on_radio_button_white_select(self, event):
-        player = "w"
+        self.GetParent().GetParent().player = "w"
 
 class FileDropTarget(wx.FileDropTarget):
     def __init__(self, window):
@@ -470,11 +471,12 @@ class GoClient(wx.Frame):
     def loc_kata_to_state(self, kata):
         return self.loc_coord_to_state(self.loc_kata_to_coord(kata))
 
-    def __init__(self, hsl_server_command, game_state):
+    def __init__(self, hsl_server_command, game_state, player):
         super().__init__(parent=None, title="HumanSLNetViz")
         self.hsl_server_command = hsl_server_command
         self.game_state = game_state
         self.board_size = self.game_state.board_size
+        self.player = player
 
         self.SetDropTarget(FileDropTarget(self))
 
@@ -491,11 +493,13 @@ class GoClient(wx.Frame):
         review_thread.start()
     
     def review(self):
+        time.sleep(2)
+
         while len(self.game_state.redo_stack) > 1:
             self.redo()
 
             move_state_player = self.game_state.redo_stack[-1][0][0]
-            if player == "b" and move_state_player == 2 or player == "w" and move_state_player == 1:
+            if self.player == "b" and move_state_player == 2 or self.player == "w" and move_state_player == 1:
                 continue
 
             moves_and_probs0 = self.board.latest_model_response["moves_and_probs0"]
@@ -519,7 +523,7 @@ class GoClient(wx.Frame):
             hsl_score = self.get_kata_score_lead(HSL_ACTUAL_COMPARE_VISITS, [self.hsl_move])[1]
             actual_score = self.get_kata_score_lead(HSL_ACTUAL_COMPARE_VISITS, [self.actual_move])[1]
 
-            print(f"HSL= {str(self.hsl_move)}: {hsl_score:.2f} | Actual= {str(self.actual_move)}: {actual_score:.2f}")
+            # print(f"HSL= {str(self.hsl_move)}: {hsl_score:.2f} | Actual= {str(self.actual_move)}: {actual_score:.2f}")
             
             if (hsl_score + HSL_MIN_SCORE_DIFF) > actual_score:
                 continue
@@ -548,7 +552,7 @@ class GoClient(wx.Frame):
 
     def init_ui(self):
         color_buttons_panel = wx.Panel(self)
-        self.color_buttons = ColorButtons(color_buttons_panel)
+        self.color_buttons = ColorButtons(color_buttons_panel, self.player)
         color_buttons_sizer = wx.BoxSizer(wx.VERTICAL)
         color_buttons_sizer.Add(self.color_buttons, proportion=0, flag=wx.EXPAND | wx.ALL)
         color_buttons_panel.SetSizer(color_buttons_sizer)
@@ -652,7 +656,7 @@ class GoClient(wx.Frame):
 
         if allow_moves:
             query["allowMoves"] = [{
-                "player": player,
+                "player": self.player,
                 "moves": [self.loc_coord_to_kata(coord) for coord in allow_moves],
                 "untilDepth": 1
             }]
@@ -782,6 +786,7 @@ class GoClient(wx.Frame):
         event.Skip()
 
 def main():
+    player = "b"
     sgf_file = None
 
     if len(sys.argv) > 1:
@@ -797,7 +802,7 @@ def main():
         game_state = GameState(19, GameState.RULES_JAPANESE)
 
     app = wx.App()
-    client = GoClient(hsl_server_command, game_state)
+    client = GoClient(hsl_server_command, game_state, player)
     client.Bind(wx.EVT_CLOSE, client.on_close)
     client.Show()
     client.slider_window.Show()
