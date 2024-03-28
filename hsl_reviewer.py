@@ -108,18 +108,18 @@ class GoBoard(wx.Panel):
 
     def get_desired_size(self):
         board_width = self.board_size * self.cell_size + 2 * self.margin
-        board_height = self.board_size * self.cell_size + 2 * self.margin
+        board_height = self.board_size * self.cell_size + self.cell_size + 2 * self.margin
         return board_width, board_height
 
     def px_of_x(self, x):
         return round(self.cell_size * x + self.margin + self.cell_size / 2)
     def py_of_y(self, y):
-        return round(self.cell_size * y + self.margin + self.cell_size / 2)
+        return round(self.cell_size * y + self.margin + self.cell_size + self.cell_size / 2)
 
     def x_of_px(self, px):
         return round((px - self.margin - self.cell_size / 2) / self.cell_size)
     def y_of_py(self, py):
-        return round((py - self.margin - self.cell_size / 2) / self.cell_size)
+        return round((py - self.margin - self.cell_size - self.cell_size / 2) / self.cell_size)
 
     def screenshot(self, filename):
         output_path = os.getcwd() + "/output"
@@ -191,6 +191,14 @@ class GoBoard(wx.Panel):
 
                 if (parent.kata_move != parent.hsl_move):
                     gc.DrawRectangle(self.px_of_x(parent.kata_move.x) - (self.cell_size // 2 - 6), self.py_of_y(parent.kata_move.y) - (self.cell_size // 2 - 6), self.cell_size - 12, self.cell_size - 12)
+
+        gc.SetFont(wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL), wx.Colour(0, 150, 0))
+        label = " to play"
+        if (self.GetParent().GetParent().player == "b"):
+            label = "Black" + label
+        else:
+            label = "White" + label
+        gc.DrawText(label, 255, 15)
 
         # Draw column labels
         gc.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL), wx.BLACK)
