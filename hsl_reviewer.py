@@ -189,6 +189,9 @@ class GoBoard(wx.Panel):
                 gc.SetPen(wx.Pen(wx.BLACK, 4))
                 gc.DrawEllipse(self.px_of_x(parent.hsl_move.x) - (self.cell_size // 2 - 6), self.py_of_y(parent.hsl_move.y) - (self.cell_size // 2 - 6), self.cell_size - 12, self.cell_size - 12)
 
+                gc.SetFont(wx.Font(26, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL), wx.Colour(0, 0, 0, 100))
+                gc.DrawText("x", self.px_of_x(parent.actual_move.x) - (self.cell_size // 2 - 7), self.py_of_y(parent.actual_move.y) - (self.cell_size // 2 + 7))
+
                 if (parent.kata_move != parent.hsl_move):
                     gc.DrawRectangle(self.px_of_x(parent.kata_move.x) - (self.cell_size // 2 - 6), self.py_of_y(parent.kata_move.y) - (self.cell_size // 2 - 6), self.cell_size - 12, self.cell_size - 12)
 
