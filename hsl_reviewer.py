@@ -468,7 +468,7 @@ class GoClient(wx.Frame):
 
     def loc_kata_to_coord(self, kata):
         chars = [char for char in kata]
-        return Coord(ord(chars[0]) - 65, 19 - int(chars[1]))
+        return Coord(ord(chars[0]) - 65, 19 - int(''.join(chars[1:])))
 
     def loc_coord_to_kata(self, coord):
         return "ABCDEFGHJKLMNOPQRSTUVWXYZ"[coord.x] + str(19 - coord.y)
@@ -543,19 +543,12 @@ class GoClient(wx.Frame):
             if (hsl_score + HSL_MIN_SCORE_DIFF) > actual_score:
                 continue
 
-            avoid_moves = []
-            x_min = max(self.actual_move.x - GRID_RADIUS, 0)
-            x_max = min(self.actual_move.x + GRID_RADIUS, 18) + 1
-            y_min = max(self.actual_move.y - GRID_RADIUS, 0)
-            y_max = min(self.actual_move.y + GRID_RADIUS, 18) + 1
-            for x in range(19):
-                for y in range(19):
-                    if (x >= x_min and x <= x_max) and (y >= y_min and y <= y_max):
-                        continue
-
-                    avoid_moves.append(Coord(x, y))
+            allow_moves = []
+            for x in range(max(self.actual_move.x - GRID_RADIUS, 0), min(self.actual_move.x + GRID_RADIUS, 18) + 1):
+                for y in range(max(self.actual_move.y - GRID_RADIUS, 0), min(self.actual_move.y + GRID_RADIUS, 18) + 1):
+                    allow_moves.append(Coord(x, y))
             
-            self.kata_move = self.get_kata_score_lead(KATA_BEST_VISITS, avoid_moves=avoid_moves)[0]
+            self.kata_move = self.get_kata_score_lead(KATA_BEST_VISITS, allow_moves)[0]
 
             rnd_filename = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
 
