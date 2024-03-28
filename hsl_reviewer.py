@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
 
-player = "w"
+player = "b"
 
 GRID_SIZE = 7
 GRID_RADIUS = math.floor(GRID_SIZE / 2)
@@ -417,6 +417,31 @@ class Coord():
     def __str__(self):
         return f"({self.x}, {self.y})"
 
+class ColorButtons(wx.Panel):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+
+        self.radio_button_black = wx.RadioButton(self, label="Black")
+        hbox.Add(self.radio_button_black, proportion=1, flag=wx.EXPAND | wx.ALL, border=5)
+
+        self.radio_button_white = wx.RadioButton(self, label="White")
+        hbox.Add(self.radio_button_white, proportion=1, flag=wx.EXPAND | wx.ALL, border=5)
+
+        vbox.Add(hbox, proportion=0, flag=wx.EXPAND | wx.ALL, border=5)
+        self.SetSizer(vbox)
+
+        self.radio_button_black.Bind(wx.EVT_RADIOBUTTON, self.on_radio_button_black_select)
+        self.radio_button_white.Bind(wx.EVT_RADIOBUTTON, self.on_radio_button_white_select)
+
+    def on_radio_button_black_select(self, event):
+        player = "b"
+
+    def on_radio_button_white_select(self, event):
+        player = "w"
+
 class FileDropTarget(wx.FileDropTarget):
     def __init__(self, window):
         super().__init__()
@@ -461,13 +486,8 @@ class GoClient(wx.Frame):
         self.init_ui()
         
         self.undo(len(self.game_state.moves))
-
-        review_thread = Thread(target=lambda: self.review())
-        review_thread.start()
     
     def review(self):
-        time.sleep(2)
-
         while len(self.game_state.redo_stack) > 1:
             self.redo()
 
@@ -524,18 +544,22 @@ class GoClient(wx.Frame):
             self.board.should_draw_review_moves = False
 
     def init_ui(self):
-        panel = wx.Panel(self)
-        self.board = GoBoard(panel, self.game_state)
+        # color_buttons_panel = wx.Panel(self)
+        # self.color_buttons = ColorButtons(color_buttons_panel)
+        # sizer = wx.BoxSizer(wx.VERTICAL)
+        # sizer.Add(self.color_buttons, 1, wx.EXPAND)
+        # color_buttons_panel.SetSizer(sizer)
+
+        board_panel = wx.Panel(self)
+        self.board = GoBoard(board_panel, self.game_state)
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.board, 1, wx.EXPAND)
-        panel.SetSizer(sizer)
-
+        board_panel.SetSizer(sizer)
         self.Bind(wx.EVT_CHAR_HOOK, self.on_key_down)
 
         # Set the initial size of the window based on the board size
         board_width, board_height = self.board.get_desired_size()
         self.SetClientSize(board_width, board_height)
-
         screen_width, screen_height = wx.DisplaySize()
         frame_width, frame_height = self.GetSize()
         pos_x = (screen_width - frame_width) // 2 - 300
@@ -543,7 +567,6 @@ class GoClient(wx.Frame):
         self.SetPosition((pos_x, pos_y))
 
         self.slider_window = SliderWindow(self)
-
         frame_width, frame_height = self.slider_window.GetSize()
         pos_x = (screen_width - frame_width) // 2 + 240
         pos_y = (screen_height - frame_height) // 2
@@ -738,6 +761,9 @@ class GoClient(wx.Frame):
         self.board.Refresh()
         self.board.refresh_model()
 
+        review_thread = Thread(target=lambda: self.review())
+        review_thread.start()
+
         return True
 
     def on_close(self, event):
@@ -746,8 +772,12 @@ class GoClient(wx.Frame):
         event.Skip()
 
 def main():
-    player = sys.argv[1]
-    sgf_file = sys.argv[2]
+    sgf_file = None
+
+    if len(sys.argv) > 1:
+        player = sys.argv[1]
+    if len(sys.argv) > 2:
+        sgf_file = sys.argv[2]
 
     hsl_server_command = f"python humanslnet_server.py -checkpoint D:/Other/Mega/MEGAsync/Go/KataGo-Assets/Models/b18c384nbt-humanv0-test.ckpt -device cuda:0"
 
