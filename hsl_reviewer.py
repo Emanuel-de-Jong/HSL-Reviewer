@@ -194,7 +194,7 @@ class GoBoard(wx.Panel):
 
         gc.SetFont(wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL), wx.Colour(0, 150, 0))
         label = " to play"
-        if (self.GetParent().GetParent().player == "b"):
+        if (self.GetParent().GetParent().player == "B"):
             label = "Black" + label
         else:
             label = "White" + label
@@ -442,14 +442,14 @@ class ColorButtons(wx.Panel):
         self.radio_button_black.Bind(wx.EVT_RADIOBUTTON, self.on_radio_button_black_select)
         self.radio_button_white.Bind(wx.EVT_RADIOBUTTON, self.on_radio_button_white_select)
 
-        if player == "w":
+        if player == "W":
             self.radio_button_white.SetValue(True)
 
     def on_radio_button_black_select(self, event):
-        self.GetParent().GetParent().player = "b"
+        self.GetParent().GetParent().player = "B"
 
     def on_radio_button_white_select(self, event):
-        self.GetParent().GetParent().player = "w"
+        self.GetParent().GetParent().player = "W"
 
 class FileDropTarget(wx.FileDropTarget):
     def __init__(self, window):
@@ -514,7 +514,7 @@ class GoClient(wx.Frame):
             self.redo()
 
             move_state_player = self.game_state.redo_stack[-1][0][0]
-            if self.player == "b" and move_state_player == 2 or self.player == "w" and move_state_player == 1:
+            if self.player == "B" and move_state_player == 2 or self.player == "W" and move_state_player == 1:
                 continue
 
             moves_and_probs0 = self.board.latest_model_response["moves_and_probs0"]
@@ -543,12 +543,19 @@ class GoClient(wx.Frame):
             if (hsl_score + HSL_MIN_SCORE_DIFF) > actual_score:
                 continue
 
-            allow_moves = []
-            for x in range(max(self.actual_move.x - GRID_RADIUS, 0), min(self.actual_move.x + GRID_RADIUS, 18) + 1):
-                for y in range(max(self.actual_move.y - GRID_RADIUS, 0), min(self.actual_move.y + GRID_RADIUS, 18) + 1):
-                    allow_moves.append(Coord(x, y))
+            avoid_moves = []
+            x_min = max(self.actual_move.x - GRID_RADIUS, 0)
+            x_max = min(self.actual_move.x + GRID_RADIUS, 18) + 1
+            y_min = max(self.actual_move.y - GRID_RADIUS, 0)
+            y_max = min(self.actual_move.y + GRID_RADIUS, 18) + 1
+            for x in range(19):
+                for y in range(19):
+                    if (x >= x_min and x <= x_max) and (y >= y_min and y <= y_max):
+                        continue
+
+                    avoid_moves.append(Coord(x, y))
             
-            self.kata_move = self.get_kata_score_lead(KATA_BEST_VISITS, allow_moves)[0]
+            self.kata_move = self.get_kata_score_lead(KATA_BEST_VISITS, avoid_moves=avoid_moves)[0]
 
             rnd_filename = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
 
@@ -650,7 +657,7 @@ class GoClient(wx.Frame):
         
         atexit.register(self.kata_server.close)
     
-    def get_kata_score_lead(self, max_visits, allow_moves = []):
+    def get_kata_score_lead(self, max_visits, allow_moves = [], avoid_moves = []):
         moves = []
         for pla, loc in self.game_state.moves:
             color = "b"
@@ -675,6 +682,13 @@ class GoClient(wx.Frame):
             query["allowMoves"] = [{
                 "player": self.player,
                 "moves": [self.loc_coord_to_kata(coord) for coord in allow_moves],
+                "untilDepth": 1
+            }]
+        
+        if avoid_moves:
+            query["avoidMoves"] = [{
+                "player": self.player,
+                "moves": [self.loc_coord_to_kata(coord) for coord in avoid_moves],
                 "untilDepth": 1
             }]
 
@@ -808,7 +822,7 @@ def main():
     if len(sys.argv) > 6:
         game_state = load_sgf_game_state(sys.argv[6])
 
-    player = "b"
+    player = "B"
     if len(sys.argv) > 7:
         player = sys.argv[7]
 
