@@ -21,9 +21,8 @@ import matplotlib.colors as mcolors
 import numpy as np
 
 player = "w"
-grid_size = 9
+grid_size = 7
 grid_radius = math.floor(grid_size / 2)
-print(grid_radius)
 
 def interpolateColor(points,x):
     for i in range(len(points)):
@@ -86,7 +85,8 @@ class GoBoard(wx.Panel):
         self.cell_size = cell_size
         self.margin = margin
 
-        self.take_screenshot = False
+        self.should_draw_review_grid = False
+        self.should_draw_review_moves = False
 
         self.sgfmeta = SGFMetadata()
         self.latest_model_response = None
@@ -110,6 +110,18 @@ class GoBoard(wx.Panel):
     def y_of_py(self, py):
         return round((py - self.margin - self.cell_size / 2) / self.cell_size)
 
+    def screenshot(self, filename):
+        filename += ".png"
+        
+        size = self.GetSize()
+        bitmap = wx.Bitmap(size.width, size.height)
+        mem_dc = wx.MemoryDC()
+        mem_dc.SelectObject(bitmap)
+
+        dc = wx.ClientDC(self)
+        mem_dc.Blit(0, 0, size.width, size.height, dc, 0, 0)
+        bitmap.SaveFile(filename, wx.BITMAP_TYPE_PNG)
+        mem_dc.SelectObject(wx.NullBitmap)
 
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
@@ -158,7 +170,7 @@ class GoBoard(wx.Panel):
         #                 gc.SetPen(wx.Pen(wx.Colour(0, 50, 255), 2))
         #             gc.DrawEllipse(self.px_of_x(x) - (self.cell_size // 2 - 6), self.py_of_y(y) - (self.cell_size // 2 - 6), self.cell_size - 12, self.cell_size - 12)
         
-        if self.take_screenshot:
+        if self.should_draw_review_grid:
             parent = self.GetParent().GetParent()
 
             gc.SetPen(wx.Pen(wx.BLUE, 4))
@@ -168,11 +180,12 @@ class GoBoard(wx.Panel):
             h = self.py_of_y(min(parent.actual_move.y + grid_radius, 18)) - y + self.cell_size / 2
             gc.DrawRectangle(x, y, w, h)
 
-            gc.SetPen(wx.Pen(wx.BLACK, 4))
-            gc.DrawRectangle(self.px_of_x(parent.hsl_move.x) - (self.cell_size // 2 - 6), self.py_of_y(parent.hsl_move.y) - (self.cell_size // 2 - 6), self.cell_size - 12, self.cell_size - 12)
+            if self.should_draw_review_moves:
+                gc.SetPen(wx.Pen(wx.BLACK, 4))
+                gc.DrawEllipse(self.px_of_x(parent.hsl_move.x) - (self.cell_size // 2 - 6), self.py_of_y(parent.hsl_move.y) - (self.cell_size // 2 - 6), self.cell_size - 12, self.cell_size - 12)
 
-            if (parent.kata_move != parent.hsl_move):
-                gc.DrawEllipse(self.px_of_x(parent.kata_move.x) - (self.cell_size // 2 - 6), self.py_of_y(parent.kata_move.y) - (self.cell_size // 2 - 6), self.cell_size - 12, self.cell_size - 12)
+                if (parent.kata_move != parent.hsl_move):
+                    gc.DrawRectangle(self.px_of_x(parent.kata_move.x) - (self.cell_size // 2 - 6), self.py_of_y(parent.kata_move.y) - (self.cell_size // 2 - 6), self.cell_size - 12, self.cell_size - 12)
 
         # Draw column labels
         gc.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL), wx.BLACK)
@@ -541,10 +554,18 @@ class GoClient(wx.Frame):
             
             self.kata_move = self.get_kata_score_lead(allowMoves)[0]
 
-            self.board.take_screenshot = True
+            self.board.should_draw_review_grid = True
             self.board.Refresh()
-            time.sleep(5)
-            self.board.take_screenshot = False
+            time.sleep(0.25)
+            self.board.screenshot("test_1")
+
+            self.board.should_draw_review_moves = True
+            self.board.Refresh()
+            time.sleep(0.25)
+            self.board.screenshot("test_2")
+            
+            self.board.should_draw_review_grid = False
+            self.board.should_draw_review_moves = False
 
     def init_ui(self):
         panel = wx.Panel(self)
