@@ -423,6 +423,19 @@ class FileDropTarget(wx.FileDropTarget):
         return self.window.on_drop_files(sgf_files)
 
 class GoClient(wx.Frame):
+    def loc_state_to_coord(self, state):
+        return (self.game_state.board.loc_x(state), self.game_state.board.loc_y(state))
+
+    def loc_coord_to_state(self, coord):
+        return self.game_state.board.loc(coord[0], coord[1])
+
+    def loc_kata_to_coord(self, kata):
+        chars = [char for char in kata]
+        return (ord(chars[0]) - 65, 19 - int(chars[1]))
+
+    def loc_coord_to_kata(self, coord):
+        return "ABCDEFGHJKLMNOPQRSTUVWXYZ"[coord[0]] + str(19 - coord[1])
+
     def __init__(self, hsl_server_command, game_state):
         super().__init__(parent=None, title="HumanSLNetViz")
         self.hsl_server_command = hsl_server_command
@@ -438,10 +451,26 @@ class GoClient(wx.Frame):
 
         self.init_ui()
         
-        # self.undo(len(self.game_state.moves))
+        self.undo(len(self.game_state.moves) - 3)
 
-        self.get_kata_score_lead()
+        # self.get_kata_score_lead()
+        self.review()
+    
+    def review(self):
+        while self.game_state.can_redo():
+            moves_and_probs0 = self.board.latest_model_response["moves_and_probs0"]
 
+            highest_hsl_val = 0
+            highest_hsl_loc = 0
+            for prob in moves_and_probs0:
+                if prob[1] > highest_hsl_val:
+                    highest_hsl_val = prob[1]
+                    highest_hsl_loc = prob[0]
+            
+            hsl = self.loc_state_to_coord(highest_hsl_loc)
+            actual = self.loc_state_to_coord(self.game_state.redo_stack[-1][0][1])
+            
+            break
 
     def init_ui(self):
         panel = wx.Panel(self)
