@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
 
-is_user_black = True
+player = "w"
 
 def interpolateColor(points,x):
     for i in range(len(points)):
@@ -480,6 +480,10 @@ class GoClient(wx.Frame):
         while len(self.game_state.redo_stack) > 1:
             self.redo()
 
+            move_state_player = self.game_state.redo_stack[-1][0][0]
+            if player == "b" and move_state_player == 2 or player == "w" and move_state_player == 1:
+                continue
+
             moves_and_probs0 = self.board.latest_model_response["moves_and_probs0"]
 
             highest_hsl_val = 0
@@ -603,7 +607,7 @@ class GoClient(wx.Frame):
 
         if allowMoves:
             query["allowMoves"] = [{
-                "player": "w",
+                "player": player,
                 "moves": [self.loc_coord_to_kata(coord) for coord in allowMoves],
                 "untilDepth": 1
             }]
