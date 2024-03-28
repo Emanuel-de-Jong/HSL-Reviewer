@@ -25,10 +25,10 @@ import numpy as np
 GRID_SIZE = 7
 GRID_RADIUS = math.floor(GRID_SIZE / 2)
 
-HSL_MIN_SCORE_DIFF = 1
+HSL_MIN_SCORE_DIFF = 2
 
 HSL_SOURCE = "OGS"
-HSL_RANK = "1k"
+HSL_RANK = "2d"
 HSL_DATE = 2022
 HSL_TIME_CONTROL = "Slow"
 
