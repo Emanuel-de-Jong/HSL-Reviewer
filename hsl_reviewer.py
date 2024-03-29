@@ -26,6 +26,7 @@ GRID_SIZE = 7
 GRID_RADIUS = math.floor(GRID_SIZE / 2)
 
 HSL_MIN_SCORE_DIFF = 2
+HSL_MAX_SCORE_DIFF = 10
 
 HSL_SOURCE = "OGS"
 HSL_RANK = "2d"
@@ -192,8 +193,8 @@ class GoBoard(wx.Panel):
                 gc.SetFont(wx.Font(26, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL), wx.Colour(0, 0, 0, 100))
                 gc.DrawText("x", self.px_of_x(parent.actual_move.x) - (self.cell_size // 2 - 7), self.py_of_y(parent.actual_move.y) - (self.cell_size // 2 + 7))
 
-                if (parent.kata_move != parent.hsl_move):
-                    gc.DrawRectangle(self.px_of_x(parent.kata_move.x) - (self.cell_size // 2 - 6), self.py_of_y(parent.kata_move.y) - (self.cell_size // 2 - 6), self.cell_size - 12, self.cell_size - 12)
+                # if (parent.kata_move != parent.hsl_move):
+                #     gc.DrawRectangle(self.px_of_x(parent.kata_move.x) - (self.cell_size // 2 - 6), self.py_of_y(parent.kata_move.y) - (self.cell_size // 2 - 6), self.cell_size - 12, self.cell_size - 12)
 
         gc.SetFont(wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL), wx.Colour(0, 150, 0))
         label = " to play"
@@ -546,12 +547,12 @@ class GoClient(wx.Frame):
             if abs(self.hsl_move.x - self.actual_move.x) > GRID_RADIUS or abs(self.hsl_move.y - self.actual_move.y) > GRID_RADIUS:
                 continue
 
-            hsl_score = self.get_kata_score_lead(HSL_ACTUAL_COMPARE_VISITS, [self.hsl_move])[1]
-            actual_score = self.get_kata_score_lead(HSL_ACTUAL_COMPARE_VISITS, [self.actual_move])[1]
+            hsl_score = self.get_kata_score_lead(HSL_ACTUAL_COMPARE_VISITS, [self.hsl_move])[0][1]
+            actual_score = self.get_kata_score_lead(HSL_ACTUAL_COMPARE_VISITS, [self.actual_move])[0][1]
 
             # print(f"HSL= {str(self.hsl_move)}: {hsl_score:.2f} | Actual= {str(self.actual_move)}: {actual_score:.2f}")
             
-            if (hsl_score + HSL_MIN_SCORE_DIFF) > actual_score:
+            if (hsl_score + HSL_MIN_SCORE_DIFF) > actual_score or (hsl_score + HSL_MAX_SCORE_DIFF) < actual_score:
                 continue
 
             allow_moves = []
@@ -559,7 +560,16 @@ class GoClient(wx.Frame):
                 for y in range(max(self.actual_move.y - GRID_RADIUS, 0), min(self.actual_move.y + GRID_RADIUS, 18) + 1):
                     allow_moves.append(Coord(x, y))
             
-            self.kata_move = self.get_kata_score_lead(KATA_BEST_VISITS, allow_moves)[0]
+            kata_plays = self.get_kata_score_lead(KATA_BEST_VISITS, allow_moves)
+
+            hsl_in_kata_moves = False
+            for play in kata_plays:
+                if self.hsl_move == play[0]:
+                    hsl_in_kata_moves = True
+                    break
+            
+            if hsl_in_kata_moves == False:
+                continue
 
             rnd_filename = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
 
@@ -696,16 +706,19 @@ class GoClient(wx.Frame):
                 "untilDepth": 1
             }]
 
-        result = self.kata_server.query_raw(query)
+        result = self.kata_server.query_raw(query)["moveInfos"]
 
-        best_score = 1_000
-        best_score_loc = ""
-        for move in result["moveInfos"]:
-            if move["scoreLead"] < best_score:
-                best_score = move["scoreLead"]
-                best_score_loc = move["move"]
+        result_by_score = sorted(result, key=lambda x: x["scoreLead"])
 
-        return (self.loc_kata_to_coord(best_score_loc), best_score)
+        output = []
+        best_score = result_by_score[0]["scoreLead"]
+        for move in result_by_score:
+            if abs(move["scoreLead"] - best_score) > 1:
+                break
+
+            output.append((self.loc_kata_to_coord(move["move"]), move["scoreLead"]))
+
+        return output
 
     def send_command(self, server_process, command):
         # print(f"Sending: {json.dumps(command)}")
