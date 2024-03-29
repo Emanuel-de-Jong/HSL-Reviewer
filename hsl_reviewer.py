@@ -461,7 +461,9 @@ class FileDropTarget(wx.FileDropTarget):
         self.window = window
 
     def OnDropFiles(self, x, y, sgf_files):
-        return self.window.on_drop_files(sgf_files)
+        thread = Thread(target=lambda: self.window.on_drop_files(sgf_files))
+        thread.start()
+        return True
 
 class GoClient(wx.Frame):
     def loc_state_to_coord(self, state):
@@ -516,8 +518,9 @@ class GoClient(wx.Frame):
         
         self.undo(len(self.game_state.moves))
 
-        review_thread = Thread(target=lambda: self.review())
-        review_thread.start()
+        if len(self.game_state.redo_stack) > 0:
+            review_thread = Thread(target=lambda: self.review())
+            review_thread.start()
     
     def review(self):
         time.sleep(2)
@@ -801,32 +804,22 @@ class GoClient(wx.Frame):
             self.board.refresh_model()
     
     def on_drop_files(self, sgf_files):
-        if len(sgf_files) == 0:
-            return False
+        for sgf_file in sgf_files:
+            game_state = load_sgf_game_state(sgf_file)
             
-        sgf_file = sgf_files[0]
-        file_extension = os.path.splitext(sgf_file)[1]
-        if file_extension != ".sgf":
-            return False
+            self.game_state = game_state
+            self.board_size = self.game_state.board_size
 
-        game_state = load_sgf_game_state(sgf_file)
-        
-        self.game_state = game_state
-        self.board_size = self.game_state.board_size
+            self.board.game_state = game_state
+            self.board.board_size = self.board_size
 
-        self.board.game_state = game_state
-        self.board.board_size = self.board_size
+            self.init_server(self.hsl_server_process)
+            self.undo(len(self.game_state.moves))
 
-        self.init_server(self.hsl_server_process)
-        self.undo(len(self.game_state.moves))
+            self.board.Refresh()
+            self.board.refresh_model()
 
-        self.board.Refresh()
-        self.board.refresh_model()
-
-        review_thread = Thread(target=lambda: self.review())
-        review_thread.start()
-
-        return True
+            self.review()
 
     def on_close(self, event):
         self.hsl_server_process.terminate()
