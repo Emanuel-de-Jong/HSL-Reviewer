@@ -26,6 +26,8 @@ class HSLTrainer(wx.Frame):
         self.panel.SetSizerAndFit(self.sizer)
         self.Show()
 
+        self.on_load_button(None)
+
     def on_load_button(self, event):
         self.question_file, self.answer_file = self.select_random_files()
         if self.question_file and os.path.exists(self.question_file):
