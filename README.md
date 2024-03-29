@@ -6,11 +6,12 @@ Tailered to your weaknesses from your own games. Using human supervised learning
 I made this in a few hours for myself and decided last minute that others might find it useful too. The code is a mix of lightvector's KataGo python scripts, mine and ChatGPT's so it's a bit of a mess. I can't guarantee that it works correctly or even works at all on your system. That said, I'd apreciate any suggestions, bug reports or contributions.
 
 ## Prerequisites
-1. A HSL model. At the time of writing, [this model](https://cdn.discordapp.com/attachments/583775968804732928/1220910607868629042/b18c384nbt-humanv0-test.ckpt?ex=6610a89c&is=65fe339c&hm=72b438db2a9e52911356c86a0c27cc63722b7cceb24422edfcf9a0788a07c1db&) from lightvector is the only one. But it's undertrained and he's planning on releasing a better one soon. Check the [Discord server](https://discord.gg/utV9dsfqFW) for updates.
-2. Python. Version 3.10.6 works for me.
-3. Run `pip install -r requirements.txt` to install the necessary python packages.
-4. Install [PyTorch](https://pytorch.org/get-started/locally/).
-5. Change the parameters in `Reviewer.bat` to your own. If you're not sure about the device, `CPU` is a slow but safe bet. Format: `[HSL_MODEL] [HSL_DEVICE] [KATAGO_EXE] [KATAGO_ANALYSIS_CFG] [KATAGO_MODEL] (SGF) (PLAYER)`
+1. [KataGo](https://github.com/lightvector/KataGo/releases) with a [model](https://katagotraining.org/networks/).
+2. A HSL model. At the time of writing, [this model](https://cdn.discordapp.com/attachments/583775968804732928/1220910607868629042/b18c384nbt-humanv0-test.ckpt?ex=6610a89c&is=65fe339c&hm=72b438db2a9e52911356c86a0c27cc63722b7cceb24422edfcf9a0788a07c1db&) from lightvector is the only one. But it's undertrained and he's planning on releasing a better one soon. Check the [Discord server](https://discord.gg/utV9dsfqFW) for updates.
+3. Python. Version 3.10.6 works for me.
+4. Run `pip install -r requirements.txt` to install the necessary python packages.
+5. Install [PyTorch](https://pytorch.org/get-started/locally/).
+6. Change the parameters in `Reviewer.bat` to your own. If you're not sure about the device, `CPU` is a slow but safe bet. Format (SGF and PLAYER are optional): `[HSL_MODEL] [HSL_DEVICE] [KATAGO_EXE] [KATAGO_ANALYSIS_CFG] [KATAGO_MODEL] (SGF) (PLAYER)`
 
 ## Create flashcards
 1. Run Reviewer.bat
