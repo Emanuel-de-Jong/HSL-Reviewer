@@ -555,8 +555,12 @@ class GoClient(wx.Frame):
 
             # print(f"HSL= {str(self.hsl_move)}: {hsl_score:.2f} | Actual= {str(self.actual_move)}: {actual_score:.2f}")
             
-            if (hsl_score + HSL_MIN_SCORE_DIFF) > actual_score or (hsl_score + HSL_MAX_SCORE_DIFF) < actual_score:
-                continue
+            if self.player == "B":
+                if (hsl_score - HSL_MIN_SCORE_DIFF) < actual_score or (hsl_score - HSL_MAX_SCORE_DIFF) > actual_score:
+                    continue
+            else:
+                if (hsl_score + HSL_MIN_SCORE_DIFF) > actual_score or (hsl_score + HSL_MAX_SCORE_DIFF) < actual_score:
+                    continue
 
             allow_moves = []
             for x in range(max(self.actual_move.x - GRID_RADIUS, 0), min(self.actual_move.x + GRID_RADIUS, 18) + 1):
@@ -711,7 +715,11 @@ class GoClient(wx.Frame):
 
         result = self.kata_server.query_raw(query)["moveInfos"]
 
-        result_by_score = sorted(result, key=lambda x: x["scoreLead"])
+        result_by_score = None
+        if self.player == "B":
+            result_by_score = sorted(result, key=lambda x: x["scoreLead"], reverse=True)
+        else:
+            result_by_score = sorted(result, key=lambda x: x["scoreLead"])
 
         output = []
         best_score = result_by_score[0]["scoreLead"]
