@@ -2,3 +2,4 @@ __pycache__/
 analysis_logs/
 output/
 games/
+venv/
