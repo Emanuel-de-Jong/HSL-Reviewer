@@ -25,8 +25,9 @@ import numpy as np
 GRID_SIZE = 7
 GRID_RADIUS = math.floor(GRID_SIZE / 2)
 
-HSL_MIN_SCORE_DIFF = 2
-HSL_MAX_SCORE_DIFF = 10
+MIN_SCORE_DIFF_ACTUAL_HSL = 2
+MAX_SCORE_DIFF_ACTUAL_HSL = 10
+MAX_SCORE_DIFF_HSL_KATA = 1
 
 HSL_SOURCE = "OGS"
 HSL_RANK = "2d"
@@ -556,10 +557,10 @@ class GoClient(wx.Frame):
             # print(f"HSL= {str(self.hsl_move)}: {hsl_score:.2f} | Actual= {str(self.actual_move)}: {actual_score:.2f}")
             
             if self.player == "B":
-                if (hsl_score - HSL_MIN_SCORE_DIFF) < actual_score or (hsl_score - HSL_MAX_SCORE_DIFF) > actual_score:
+                if (hsl_score - MIN_SCORE_DIFF_ACTUAL_HSL) < actual_score or (hsl_score - MAX_SCORE_DIFF_ACTUAL_HSL) > actual_score:
                     continue
             else:
-                if (hsl_score + HSL_MIN_SCORE_DIFF) > actual_score or (hsl_score + HSL_MAX_SCORE_DIFF) < actual_score:
+                if (hsl_score + MIN_SCORE_DIFF_ACTUAL_HSL) > actual_score or (hsl_score + MAX_SCORE_DIFF_ACTUAL_HSL) < actual_score:
                     continue
 
             allow_moves = []
@@ -567,15 +568,9 @@ class GoClient(wx.Frame):
                 for y in range(max(self.actual_move.y - GRID_RADIUS, 0), min(self.actual_move.y + GRID_RADIUS, 18) + 1):
                     allow_moves.append(Coord(x, y))
             
-            kata_plays = self.get_kata_score_lead(KATA_BEST_VISITS, allow_moves)
+            kata_score = self.get_kata_score_lead(KATA_BEST_VISITS, allow_moves)[0][1]
 
-            hsl_in_kata_moves = False
-            for play in kata_plays:
-                if self.hsl_move == play[0]:
-                    hsl_in_kata_moves = True
-                    break
-            
-            if hsl_in_kata_moves == False:
+            if abs(kata_score - hsl_score) > MAX_SCORE_DIFF_HSL_KATA:
                 continue
 
             rnd_filename = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
