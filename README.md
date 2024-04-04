@@ -7,7 +7,7 @@ I made this in a few hours for myself and decided last minute that others might 
 
 ## Prerequisites
 1. [KataGo](https://github.com/lightvector/KataGo/releases) with a [model](https://katagotraining.org/networks/).
-2. A HSL model. At the time of writing, [this model](https://cdn.discordapp.com/attachments/583775968804732928/1220910607868629042/b18c384nbt-humanv0-test.ckpt?ex=6610a89c&is=65fe339c&hm=72b438db2a9e52911356c86a0c27cc63722b7cceb24422edfcf9a0788a07c1db&) from lightvector is the only one. But it's undertrained and he's planning on releasing a better one soon. Check the [Discord server](https://discord.gg/utV9dsfqFW) for updates.
+2. A HSL model. For example [this model](https://cdn.discordapp.com/attachments/583775968804732928/1225481815033253969/b18c384nbt-humanv0.ckpt?ex=662149e1&is=660ed4e1&hm=ab95493b318a249923304d6e199c8db69b788929487557e316f97f6e82ec2259&) from lightvector. Check the [Discord server](https://discord.gg/utV9dsfqFW) for possibly newer versions.
 3. Python. Version 3.10.6 works for me.
 4. Run `pip install -r requirements.txt` to install the necessary python packages.
 5. Install [PyTorch](https://pytorch.org/get-started/locally/).
