@@ -1,4 +1,4 @@
-# HSL-Reviewer
+# HSL Reviewer
 Improve your shapes and intuition in the game of Go.<br>
 Tailered to your weaknesses from your own games. Using human supervised learning for questions and answers of your skill level.
 
