@@ -2,6 +2,22 @@
 Improve your shapes and intuition in the game of Go.<br>
 Tailered to your weaknesses from your own games. Using human supervised learning for questions and answers of your skill level.
 
+### Table of Contents
+- [About](#about)
+
+| | |
+| :---: | :---: |
+| ![Question](/Screenshots/1-Question.png) | ![Answer](/Screenshots/2-Answer.png) |
+| ![Reviewer](/Screenshots/3-Reviewer.png) | |
+
+## About
+| | |
+| --- | --- |
+| | - **Project Overview** - |
+| **Active Development:** |  |
+| **Maintenance:** |  |
+
+
 ## Disclaimer
 I made this in a few hours for myself and decided last minute that others might find it useful too. The code is a mix of lightvector's KataGo python scripts, mine and ChatGPT's so it's a bit of a mess. I can't guarantee that it works correctly or even works at all on your system. That said, I'd apreciate any suggestions, bug reports or contributions.
 
@@ -32,11 +48,5 @@ There are also some options you can tweak at the top in `hsl_reviewer.py`.
 It should also work on linux and mac. Just run `hsl_reviewer.py` or `hsl_trainer.py` directly.
 
 ## Screenshots
-![Reviewer](/screenshots/Reviewer.png)
-
-![Question](/screenshots/Question.png)
-
-![Answer](/screenshots/Answer.png)
-
 X = Game move<br>
 O = HSL move<br>
