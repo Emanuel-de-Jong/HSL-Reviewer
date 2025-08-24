@@ -6,8 +6,8 @@ Improve your shapes and intuition in the game of Go. Tailered to your weaknesses
 
 | | |
 | :---: | :---: |
-| ![Question](/Screenshots/1-Question.png) | ![Answer](/Screenshots/2-Answer.png) |
-| ![Reviewer](/Screenshots/3-Reviewer.png) | |
+| ![](/Screenshots/1-Question.png) | ![](/Screenshots/2-Answer.png) |
+| ![](/Screenshots/3-Reviewer.png) | |
 
 X = Game move<br>
 O = HSL move<br>
