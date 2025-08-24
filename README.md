@@ -1,22 +1,18 @@
 # HSL Reviewer
-Improve your shapes and intuition in the game of Go.<br>
+Improve your shapes and intuition in the game of Go.
+
 Tailered to your weaknesses from your own games. Using human supervised learning for questions and answers of your skill level.
 
-### Table of Contents
-- [About](#about)
+**Active Development:** <br>
+**Last Change:** <br>
 
 | | |
 | :---: | :---: |
 | ![Question](/Screenshots/1-Question.png) | ![Answer](/Screenshots/2-Answer.png) |
 | ![Reviewer](/Screenshots/3-Reviewer.png) | |
 
-## About
-| | |
-| --- | --- |
-| | - **Project Overview** - |
-| **Active Development:** |  |
-| **Maintenance:** |  |
-
+X = Game move<br>
+O = HSL move<br>
 
 ## Disclaimer
 I made this in a few hours for myself and decided last minute that others might find it useful too. The code is a mix of lightvector's KataGo python scripts, mine and ChatGPT's so it's a bit of a mess. I can't guarantee that it works correctly or even works at all on your system. That said, I'd apreciate any suggestions, bug reports or contributions.
@@ -30,7 +26,7 @@ I made this in a few hours for myself and decided last minute that others might 
 6. Change the parameters in `Reviewer.bat` to your own. If you're not sure about the device, `CPU` is a slow but safe bet. Format (SGF and PLAYER are optional): `[HSL_MODEL] [HSL_DEVICE] [KATAGO_EXE] [KATAGO_ANALYSIS_CFG] [KATAGO_MODEL] (SGF) (PLAYER)`
 
 ## Create flashcards
-1. Run Reviewer.bat
+1. Run `Reviewer.bat`.
 2. Set the color you were in the game you want to review.
 3. Optionally change the HSL sliders.
 4. Drag & drop your game sgf.
@@ -39,14 +35,10 @@ I made this in a few hours for myself and decided last minute that others might 
 There are also some options you can tweak at the top in `hsl_reviewer.py`.
 
 ## Train
-1. Run Trainer.bat
+1. Run `Trainer.bat`.
 2. Load a card and think of a move.
 3. Click on the board to see the answer.
 4. Delete the card if you feel the answer is easy.
 5. Load the next card.
 
 It should also work on linux and mac. Just run `hsl_reviewer.py` or `hsl_trainer.py` directly.
-
-## Screenshots
-X = Game move<br>
-O = HSL move<br>
