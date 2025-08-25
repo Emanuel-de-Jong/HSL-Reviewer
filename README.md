@@ -1,8 +1,8 @@
 # HSL Reviewer
 Improve your shapes and intuition in the game of Go. Tailered to your weaknesses from your own games. Using human supervised learning for questions and answers of your skill level.
 
-**Active Development:** <br>
-**Last Change:** <br>
+**Active Development:** 2024-03-26 - 2024-03-29<br>
+**Last Change:** 2024-04-05<br>
 
 | | |
 | :---: | :---: |
