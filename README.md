@@ -40,3 +40,4 @@ There are also some options you can tweak at the top in `hsl_reviewer.py`.
 5. Load the next card.
 
 It should also work on linux and mac. Just run `hsl_reviewer.py` or `hsl_trainer.py` directly.
+ 
