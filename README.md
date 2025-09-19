@@ -3,6 +3,7 @@ Improve your shapes and intuition in the game of Go. Tailered to your weaknesses
 
 **Active Development:** 2024-03-26 - 2024-03-29<br>
 **Last Change:** 2024-04-05<br>
+**Highlights:** Machine Learning<br>
 
 | | |
 | :---: | :---: |
