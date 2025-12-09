@@ -34,7 +34,7 @@ def load_swa_model_state_dict(state_dict):
 
 
 def load_model(checkpoint_file, use_swa, device, pos_len=19, verbose=False):
-    state_dict = torch.load(checkpoint_file,map_location="cpu")
+    state_dict = torch.load(checkpoint_file,map_location="cpu",weights_only=False)
 
     if "config" in state_dict:
         model_config = state_dict["config"]

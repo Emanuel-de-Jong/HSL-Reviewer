@@ -629,7 +629,7 @@ class GoClient(wx.Frame):
     def start_server(self):
         # print(f"Starting hsl server with command: {server_command}")
         server_process = subprocess.Popen(
-            f"python humanslnet_server.py -checkpoint {self.hsl_model_path} -device {self.hsl_device}",
+            [sys.executable, "humanslnet_server.py", "-checkpoint", self.hsl_model_path, "-device", self.hsl_device],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,

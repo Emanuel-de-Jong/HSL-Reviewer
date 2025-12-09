@@ -1,0 +1,2 @@
+#!/bin/bash
+python hsl_reviewer.py /home/graviton/Downloads/b18c384nbt-humanv0-test.ckpt cuda:0 /home/graviton/base/apps_cloud/software/go/katago/opencl_linux/katago /home/graviton/base/apps_cloud/software/go/katago/opencl_linux/analysis_example.cfg /home/graviton/base/apps_cloud/software/go/katago/models/kata1-b28c512nbt-adam-s11165M-d5387M.bin.gz test.sgf W
