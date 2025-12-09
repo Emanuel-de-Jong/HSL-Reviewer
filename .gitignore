@@ -1,6 +1,10 @@
 analysis_logs/
 output/
 games/
+Reviewer.bat
+Reviewer.sh
+Reviewer-Test.bat
+Reviewer-Test.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

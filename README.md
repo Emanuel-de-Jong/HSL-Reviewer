@@ -19,7 +19,7 @@ O = HSL move<br>
 3. Python. Version 3.10.6 works for me.
 4. Run `pip install -r requirements.txt` to install the necessary python packages.
 5. Install [PyTorch](https://pytorch.org/get-started/locally/).
-6. Change the parameters in `Reviewer.sh/bat` to your own. If you're not sure about the device, `CPU` is a slow but safe bet. Format (SGF and PLAYER are optional): `[HSL_MODEL] [HSL_DEVICE] [KATAGO_EXE] [KATAGO_ANALYSIS_CFG] [KATAGO_MODEL] (SGF) (PLAYER)`
+6. Make a copy of `Reviewer-TEMPLATE.sh/bat` and remove `-TEMPLATE` from the name. Change the parameters in the script to your own. If you have a dedicated GPU, try `cuda:0` as the device. If that doesn't work you can switch to `cpu` which is slower but will always work.
 
 ## Create flashcards
 1. Run `Reviewer.sh/bat`.
