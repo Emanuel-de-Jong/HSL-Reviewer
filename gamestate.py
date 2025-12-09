@@ -1,5 +1,5 @@
 
-from typing import Dict, Any, List, Optional, TYPE_CHECKING
+from typing import Dict, Any, List, Tuple, Union, Optional, TYPE_CHECKING
 import math
 
 import numpy as np
@@ -47,7 +47,7 @@ class GameState:
     }
 
 
-    def __init__(self, board_size: int, rules: Dict[str,Any]):
+    def __init__(self, board_size: Union[int,Tuple[int,int]], rules: Dict[str,Any]):
         self.board_size = board_size
         self.board = Board(size=board_size)
         self.moves = []
@@ -115,7 +115,8 @@ class GameState:
 
             input_meta = None
             if sgfmeta is not None:
-                input_meta = torch.tensor(sgfmeta.get_metadata_row(self.board.pla), dtype=torch.float32, device=model.device)
+                metarow = sgfmeta.get_metadata_row(nextPlayer=self.board.pla, boardArea=self.board.x_size*self.board.y_size)
+                input_meta = torch.tensor(metarow, dtype=torch.float32, device=model.device)
                 input_meta = input_meta.reshape([1,-1])
 
             extra_outputs = ExtraOutputs(extra_output_names)
@@ -168,6 +169,13 @@ class GameState:
             seki = seki_probs[1] - seki_probs[2]
             seki2 = torch.sigmoid(seki_logits[3,:,:]).cpu().numpy()
             scorebelief = torch.nn.functional.softmax(scorebelief_logits,dim=0).cpu().numpy()
+            if model.config["version"] >= 16:
+                qwinloss = torch.tanh(policy_logits[6,:]).cpu().numpy()
+                qscore = (policy_logits[7,:] * model.scoremean_multiplier).cpu().numpy()
+            else:
+                qwinloss = torch.zeros_like(policy_logits[0,:]).cpu().numpy()
+                qscore = torch.zeros_like(policy_logits[0,:]).cpu().numpy()
+
 
         board = self.board
 
@@ -190,8 +198,8 @@ class GameState:
         ownership_flat = ownership.reshape([features.pos_len * features.pos_len])
         ownership_by_loc = []
         board = self.board
-        for y in range(board.size):
-            for x in range(board.size):
+        for y in range(board.y_size):
+            for x in range(board.x_size):
                 loc = board.loc(x,y)
                 pos = features.loc_to_tensor_pos(loc,board)
                 if board.pla == Board.WHITE:
@@ -202,8 +210,8 @@ class GameState:
         scoring_flat = scoring.reshape([features.pos_len * features.pos_len])
         scoring_by_loc = []
         board = self.board
-        for y in range(board.size):
-            for x in range(board.size):
+        for y in range(board.y_size):
+            for x in range(board.x_size):
                 loc = board.loc(x,y)
                 pos = features.loc_to_tensor_pos(loc,board)
                 if board.pla == Board.WHITE:
@@ -214,8 +222,8 @@ class GameState:
         futurepos0_flat = futurepos[0,:,:].reshape([features.pos_len * features.pos_len])
         futurepos0_by_loc = []
         board = self.board
-        for y in range(board.size):
-            for x in range(board.size):
+        for y in range(board.y_size):
+            for x in range(board.x_size):
                 loc = board.loc(x,y)
                 pos = features.loc_to_tensor_pos(loc,board)
                 if board.pla == Board.WHITE:
@@ -226,8 +234,8 @@ class GameState:
         futurepos1_flat = futurepos[1,:,:].reshape([features.pos_len * features.pos_len])
         futurepos1_by_loc = []
         board = self.board
-        for y in range(board.size):
-            for x in range(board.size):
+        for y in range(board.y_size):
+            for x in range(board.x_size):
                 loc = board.loc(x,y)
                 pos = features.loc_to_tensor_pos(loc,board)
                 if board.pla == Board.WHITE:
@@ -238,8 +246,8 @@ class GameState:
         seki_flat = seki.reshape([features.pos_len * features.pos_len])
         seki_by_loc = []
         board = self.board
-        for y in range(board.size):
-            for x in range(board.size):
+        for y in range(board.y_size):
+            for x in range(board.x_size):
                 loc = board.loc(x,y)
                 pos = features.loc_to_tensor_pos(loc,board)
                 if board.pla == Board.WHITE:
@@ -250,8 +258,8 @@ class GameState:
         seki_flat2 = seki2.reshape([features.pos_len * features.pos_len])
         seki_by_loc2 = []
         board = self.board
-        for y in range(board.size):
-            for x in range(board.size):
+        for y in range(board.y_size):
+            for x in range(board.x_size):
                 loc = board.loc(x,y)
                 pos = features.loc_to_tensor_pos(loc,board)
                 seki_by_loc2.append((loc,seki_flat2[pos]))
@@ -306,8 +314,10 @@ class GameState:
             "seki2": seki2,
             "seki_by_loc2": seki_by_loc2,
             "scorebelief": scorebelief,
+            "qwinloss": qwinloss,
+            "qscore": qscore,
             "genmove_result": genmove_result,
-            **{ name:activation[0].numpy() for name, activation in extra_outputs.returned.items() },
+            **{ name:activation[0].cpu().numpy() for name, activation in extra_outputs.returned.items() },
             "available_extra_outputs": available_extra_outputs,
         }
 

@@ -3,8 +3,6 @@ import logging
 import os
 
 import torch
-from torch.optim.swa_utils import AveragedModel
-from model_pytorch import Model
 
 import packaging
 import packaging.version
@@ -42,6 +40,9 @@ def load_swa_model_state_dict(state_dict):
 
 
 def load_model(checkpoint_file, use_swa, device, pos_len=19, verbose=False):
+    from model_pytorch import Model
+    from torch.optim.swa_utils import AveragedModel
+
     state_dict = torch.load(checkpoint_file,map_location="cpu")
 
     if "config" in state_dict:

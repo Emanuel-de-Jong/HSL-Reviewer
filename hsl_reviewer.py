@@ -94,7 +94,7 @@ class GoBoard(wx.Panel):
     def __init__(self, parent, game_state, cell_size=30, margin=30):
         super().__init__(parent)
         self.game_state = game_state
-        self.board_size = game_state.board.size
+        self.board_size = game_state.board.x_size
         self.cell_size = cell_size
         self.margin = margin
 
@@ -377,7 +377,6 @@ class SliderWindow(wx.Frame):
             mainTimeSeconds = [300,900,1800,0][self.tc_slider.get_selected_index()],
             periodTimeSeconds = [10,15,30,0][self.tc_slider.get_selected_index()],
             byoYomiPeriods = [5,5,5,0][self.tc_slider.get_selected_index()],
-            boardArea = 361,
             gameDate = datetime.date(self.date_slider.get_selected_option(),6,1),
             source = self.source_slider.get_selected_index(),
         )
@@ -504,7 +503,7 @@ class GoClient(wx.Frame):
         self.katago_model_path = katago_model_path
 
         self.game_state = game_state
-        self.board_size = self.game_state.board_size
+        self.board_size = self.game_state.board.x_size
 
         self.player = player
 
@@ -653,7 +652,7 @@ class GoClient(wx.Frame):
         return server_process
 
     def init_server(self, server_process):
-        command = {"command": "start", "board_size": self.board_size, "rules": GameState.RULES_JAPANESE}
+        command = {"command": "start", "board_x_size": self.board_size, "board_y_size": self.board_size, "rules": GameState.RULES_JAPANESE}
         self.send_command(server_process, command)
         response = self.receive_response(server_process)
         if response != {"outputs": ""}:
@@ -811,7 +810,7 @@ class GoClient(wx.Frame):
             game_state = load_sgf_game_state(sgf_file)
             
             self.game_state = game_state
-            self.board_size = self.game_state.board_size
+            self.board_size = self.game_state.board.x_size
 
             self.board.game_state = game_state
             self.board.board_size = self.board_size
