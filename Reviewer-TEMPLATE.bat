@@ -1,0 +1,1 @@
+python scripts/hsl_reviewer.py [HSL_MODEL_PATH] [cpu|cuda:0] [KATAGO_EXECUTABLE_PATH] [KATAGO_ANALYSIS_CFG_PATH] [KATAGO_MODEL_PATH]

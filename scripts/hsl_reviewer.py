@@ -628,7 +628,7 @@ class GoClient(wx.Frame):
     def start_server(self):
         # print(f"Starting hsl server with command: {server_command}")
         server_process = subprocess.Popen(
-            [sys.executable, "humanslnet_server.py", "-checkpoint", self.hsl_model_path, "-device", self.hsl_device],
+            [sys.executable, f"scripts{os.sep}humanslnet_server.py", "-checkpoint", self.hsl_model_path, "-device", self.hsl_device],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -829,7 +829,7 @@ class GoClient(wx.Frame):
         event.Skip()
 
 def main():
-    # hsl_reviewer [HSL_MODEL] [HSL_DEVICE] [KATAGO_EXE] [KATAGO_ANALYSIS_CFG] [KATAGO_MODEL] (SGF) (PLAYER)
+    # hsl_reviewer [HSL_MODEL_PATH] [cpu|cuda:0] [KATAGO_EXECUTABLE_PATH] [KATAGO_ANALYSIS_CFG_PATH] [KATAGO_MODEL_PATH] (SGF) (PLAYER)
     game_state = GameState(19, GameState.RULES_JAPANESE)
     if len(sys.argv) > 6:
         game_state = load_sgf_game_state(sys.argv[6])

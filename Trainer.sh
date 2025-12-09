@@ -1,2 +1,2 @@
 #!/bin/bash
-python hsl_trainer.py
+python scripts/hsl_trainer.py
