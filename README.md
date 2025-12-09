@@ -15,7 +15,7 @@ O = HSL move<br>
 
 ## Prerequisites
 1. [KataGo](https://github.com/lightvector/KataGo/releases) with a [model](https://katagotraining.org/networks/).
-2. A HSL model. For example [this model](https://cdn.discordapp.com/attachments/583775968804732928/1225481815033253969/b18c384nbt-humanv0.ckpt?ex=662149e1&is=660ed4e1&hm=ab95493b318a249923304d6e199c8db69b788929487557e316f97f6e82ec2259&) from lightvector. Check the [Discord server](https://discord.gg/utV9dsfqFW) for possibly newer versions.
+2. A HSL model. For example [this model](https://github.com/lightvector/KataGo/releases/download/v1.15.0/b18c384nbt-humanv0.ckpt) from lightvector. Make sure it's a `ckpt` file.
 3. Python. Version 3.10.6 works for me.
 4. Run `pip install -r requirements.txt` to install the necessary python packages.
 5. Install [PyTorch](https://pytorch.org/get-started/locally/).
